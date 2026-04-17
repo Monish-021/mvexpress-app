@@ -242,7 +242,7 @@
         <h2>👤 Account Management <span id="editState" class="mode-badge" style="display:none;">Edit Mode</span></h2>
         <p>Create, edit and manage login accounts safely</p>
       </div>
-      <button onclick="window.location.href='admin.html'">Back to Admin</button>
+      <button type="button" onclick="window.location.href='admin.html'">Back to Admin</button>
     </div>
 
     <div class="content">
@@ -306,15 +306,43 @@
   </div>
 
   <script>
-    if (localStorage.getItem("loggedIn") !== "true") {
-      window.location.href = "login.html";
-    }
+    const usernameEl = document.getElementById("username");
+    const passwordEl = document.getElementById("password");
+    const roleEl = document.getElementById("role");
+    const editStateEl = document.getElementById("editState");
+    const msgEl = document.getElementById("msg");
+    const tbodyEl = document.getElementById("tbody");
 
     let editId = null;
     let accountCache = [];
 
+    function getSessionToken() {
+      return localStorage.getItem("sessionToken") || "";
+    }
+
+    function clearAuthAndRedirect() {
+      localStorage.removeItem("loggedIn");
+      localStorage.removeItem("sessionToken");
+      localStorage.removeItem("authUser");
+      window.location.href = "login.html";
+    }
+
     async function fetchJSON(url, options = {}) {
-      const res = await fetch(url, options);
+      const headers = {
+        ...(options.headers || {})
+      };
+
+      const token = getSessionToken();
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+        headers["x-session-token"] = token;
+      }
+
+      const res = await fetch(url, {
+        ...options,
+        headers
+      });
+
       const text = await res.text();
 
       let data = {};
@@ -324,8 +352,30 @@
         data = { error: text || "Request failed" };
       }
 
+      if (res.status === 401) {
+        clearAuthAndRedirect();
+        throw new Error("Session expired. Please login again.");
+      }
+
       if (!res.ok) throw new Error(data.error || "Request failed");
       return data;
+    }
+
+    async function ensureAuthenticated() {
+      const token = getSessionToken();
+      if (!token) {
+        clearAuthAndRedirect();
+        return false;
+      }
+
+      try {
+        const auth = await fetchJSON("/api/me");
+        localStorage.setItem("loggedIn", "true");
+        localStorage.setItem("authUser", JSON.stringify(auth.user || {}));
+        return true;
+      } catch (err) {
+        return false;
+      }
     }
 
     function escapeHtml(value) {
@@ -338,8 +388,8 @@
     }
 
     function showMessage(text, type = "") {
-      msg.textContent = text;
-      msg.className = `msg ${type}`.trim();
+      msgEl.textContent = text || "";
+      msgEl.className = `msg ${type}`.trim();
     }
 
     function formatDate(value) {
@@ -351,20 +401,20 @@
 
     function clearForm() {
       editId = null;
-      username.value = "";
-      password.value = "";
-      role.value = "staff";
-      editState.style.display = "none";
+      usernameEl.value = "";
+      passwordEl.value = "";
+      roleEl.value = "staff";
+      editStateEl.style.display = "none";
       showMessage("");
-      username.focus();
+      usernameEl.focus();
     }
 
     function fillFormForEdit(account) {
       editId = account.id;
-      username.value = account.username || "";
-      password.value = "";
-      role.value = account.role || "staff";
-      editState.style.display = "inline-block";
+      usernameEl.value = account.username || "";
+      passwordEl.value = "";
+      roleEl.value = account.role || "staff";
+      editStateEl.style.display = "inline-block";
       showMessage("Editing account. Enter a password to keep/update the login password.", "success");
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -375,21 +425,21 @@
     }
 
     async function loadAccounts() {
-      tbody.innerHTML = `<tr><td colspan="5" class="empty">Loading accounts.</td></tr>`;
+      tbodyEl.innerHTML = `<tr><td colspan="5" class="empty">Loading accounts.</td></tr>`;
 
       try {
         accountCache = await fetchJSON("/api/accounts");
-        tbody.innerHTML = "";
+        tbodyEl.innerHTML = "";
 
         if (!accountCache.length) {
-          tbody.innerHTML = `<tr><td colspan="5" class="empty">No accounts found</td></tr>`;
+          tbodyEl.innerHTML = `<tr><td colspan="5" class="empty">No accounts found</td></tr>`;
           return;
         }
 
         accountCache.forEach(account => {
           const isDefaultAdmin = String(account.username || "").trim().toLowerCase() === "mvexpress021";
 
-          tbody.innerHTML += `
+          tbodyEl.innerHTML += `
             <tr>
               <td>${escapeHtml(account.id || "-")}</td>
               <td>${escapeHtml(account.username || "-")}</td>
@@ -408,32 +458,32 @@
           `;
         });
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="5" class="empty">${escapeHtml(err.message)}</td></tr>`;
+        tbodyEl.innerHTML = `<tr><td colspan="5" class="empty">${escapeHtml(err.message)}</td></tr>`;
       }
     }
 
     async function saveAccount() {
       const payload = {
-        username: username.value.trim(),
-        password: password.value.trim(),
-        role: role.value
+        username: usernameEl.value.trim(),
+        password: passwordEl.value.trim(),
+        role: roleEl.value
       };
 
       if (!payload.username) {
         showMessage("Username is required", "error");
-        username.focus();
+        usernameEl.focus();
         return;
       }
 
       if (!editId && !payload.password) {
         showMessage("Password is required", "error");
-        password.focus();
+        passwordEl.focus();
         return;
       }
 
       if (editId && !payload.password) {
         showMessage("For editing, enter a password again so the account stays valid", "error");
-        password.focus();
+        passwordEl.focus();
         return;
       }
 
@@ -480,7 +530,13 @@
       }
     }
 
-    loadAccounts();
+    async function init() {
+      const ok = await ensureAuthenticated();
+      if (!ok) return;
+      loadAccounts();
+    }
+
+    init();
   </script>
 </body>
 </html>

@@ -234,10 +234,6 @@
   </div>
 
   <script>
-    if (localStorage.getItem("loggedIn") !== "true") {
-      window.location.href = "login.html";
-    }
-
     let editId = null;
     let creditCache = [];
 
@@ -251,8 +247,33 @@
     const editState = document.getElementById("editState");
     const tbody = document.getElementById("tbody");
 
+    function getSessionToken() {
+      return localStorage.getItem("sessionToken") || "";
+    }
+
+    function clearAuthAndRedirect() {
+      localStorage.removeItem("loggedIn");
+      localStorage.removeItem("sessionToken");
+      localStorage.removeItem("authUser");
+      window.location.href = "login.html";
+    }
+
     async function fetchJSON(url, options = {}) {
-      const res = await fetch(url, options);
+      const headers = {
+        ...(options.headers || {})
+      };
+
+      const token = getSessionToken();
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+        headers["x-session-token"] = token;
+      }
+
+      const res = await fetch(url, {
+        ...options,
+        headers
+      });
+
       const text = await res.text();
       let data = {};
       try {
@@ -260,8 +281,31 @@
       } catch {
         data = { error: text || "Request failed" };
       }
+
+      if (res.status === 401) {
+        clearAuthAndRedirect();
+        throw new Error("Session expired. Please login again.");
+      }
+
       if (!res.ok) throw new Error(data.error || "Request failed");
       return data;
+    }
+
+    async function ensureAuthenticated() {
+      const token = getSessionToken();
+      if (!token) {
+        clearAuthAndRedirect();
+        return false;
+      }
+
+      try {
+        const auth = await fetchJSON("/api/me");
+        localStorage.setItem("loggedIn", "true");
+        localStorage.setItem("authUser", JSON.stringify(auth.user || {}));
+        return true;
+      } catch (err) {
+        return false;
+      }
     }
 
     function escapeHtml(value) {
@@ -359,7 +403,7 @@
 
       try {
         if (editId) {
-          await fetchJSON(`/api/credits/${editId}`, {
+          await fetchJSON(`/api/credits/${encodeURIComponent(editId)}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
@@ -385,7 +429,7 @@
       if (!confirm("Delete this credit record?")) return;
 
       try {
-        await fetchJSON(`/api/credits/${id}`, { method: "DELETE" });
+        await fetchJSON(`/api/credits/${encodeURIComponent(id)}`, { method: "DELETE" });
 
         if (editId === id) {
           clearForm();
@@ -397,7 +441,13 @@
       }
     }
 
-    loadCredits();
+    async function init() {
+      const ok = await ensureAuthenticated();
+      if (!ok) return;
+      loadCredits();
+    }
+
+    init();
   </script>
 </body>
 </html>

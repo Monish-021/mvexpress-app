@@ -502,8 +502,8 @@
         <div class="dropdown" id="accountDropdown">
           <button class="nav-btn" id="accountBtn">Account ▾</button>
           <div class="dropdown-menu">
-          <button class="dropdown-item" onclick="window.location.href='accounts.html'">Add Account</button>
-          <button class="dropdown-item" id="logoutBtn">Logout</button>
+            <button class="dropdown-item" onclick="window.location.href='accounts.html'">Add Account</button>
+            <button class="dropdown-item" id="logoutBtn">Logout</button>
           </div>
         </div>
       </div>
@@ -632,11 +632,6 @@
 
   <script>
     (() => {
-      if (localStorage.getItem("loggedIn") !== "true") {
-        window.location.href = "login.html";
-        return;
-      }
-
       const $ = (id) => document.getElementById(id);
 
       const els = {
@@ -704,18 +699,75 @@
         return "";
       }
 
+      function getSessionToken() {
+        return localStorage.getItem("sessionToken") || "";
+      }
+
+      function clearAuthAndRedirect() {
+        localStorage.removeItem("loggedIn");
+        localStorage.removeItem("sessionToken");
+        localStorage.removeItem("authUser");
+        window.location.href = "login.html";
+      }
+
       async function fetchJSON(url, options = {}) {
-        const res = await fetch(url, options);
+        const headers = {
+          ...(options.headers || {})
+        };
+
+        const token = getSessionToken();
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+          headers["x-session-token"] = token;
+        }
+
+        const res = await fetch(url, {
+          ...options,
+          headers
+        });
+
         const text = await res.text();
         let data = {};
-        try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text || "Request failed" }; }
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch {
+          data = { error: text || "Request failed" };
+        }
+
+        if (res.status === 401) {
+          clearAuthAndRedirect();
+          throw new Error("Session expired. Please login again.");
+        }
+
         if (!res.ok) throw new Error(data.error || "Request failed");
         return data;
       }
 
-      function logout() {
-        localStorage.removeItem("loggedIn");
-        window.location.href = "login.html";
+      async function ensureAuthenticated() {
+        const token = getSessionToken();
+        if (!token) {
+          clearAuthAndRedirect();
+          return false;
+        }
+
+        try {
+          const auth = await fetchJSON("/api/me");
+          localStorage.setItem("loggedIn", "true");
+          localStorage.setItem("authUser", JSON.stringify(auth.user || {}));
+          return true;
+        } catch (err) {
+          return false;
+        }
+      }
+
+      async function logout() {
+        try {
+          await fetchJSON("/api/logout", { method: "POST" });
+        } catch (err) {
+          // ignore logout API failure and still clear local session
+        } finally {
+          clearAuthAndRedirect();
+        }
       }
 
       function changeColor(color) {
@@ -998,27 +1050,44 @@
         renderShipments();
       }
 
-      els.accountBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        els.accountDropdown.classList.toggle("open");
-      });
-      els.logoutBtn.addEventListener("click", logout);
-      els.themeColor.addEventListener("input", (e) => changeColor(e.target.value));
-      els.fontSelect.addEventListener("change", (e) => changeFont(e.target.value));
-      els.todayBtn.addEventListener("click", setTodayFilter);
-      els.weekBtn.addEventListener("click", setWeekFilter);
-      els.monthBtn.addEventListener("click", setMonthFilter);
-      els.clearDatesBtn.addEventListener("click", clearDateFilter);
-      els.searchBtn.addEventListener("click", renderShipments);
-      els.resetBtn.addEventListener("click", resetFilters);
-      els.closeDetailsBtn.addEventListener("click", () => els.detailsModal.classList.remove("active"));
-      els.detailsModal.addEventListener("click", (e) => {
-        if (e.target === els.detailsModal) els.detailsModal.classList.remove("active");
-      });
+      async function init() {
+        const ok = await ensureAuthenticated();
+        if (!ok) return;
 
-      loadAll().catch(err => {
-        els.tbody.innerHTML = `<tr><td colspan="14" class="empty">${escapeHtml(err.message)}</td></tr>`;
-      });
+        els.accountBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          els.accountDropdown.classList.toggle("open");
+        });
+
+        document.addEventListener("click", (e) => {
+          if (!els.accountDropdown.contains(e.target)) {
+            els.accountDropdown.classList.remove("open");
+          }
+          document.querySelectorAll(".search-select").forEach(el => {
+            if (!el.contains(e.target)) el.classList.remove("open");
+          });
+        });
+
+        els.logoutBtn.addEventListener("click", logout);
+        els.themeColor.addEventListener("input", (e) => changeColor(e.target.value));
+        els.fontSelect.addEventListener("change", (e) => changeFont(e.target.value));
+        els.todayBtn.addEventListener("click", setTodayFilter);
+        els.weekBtn.addEventListener("click", setWeekFilter);
+        els.monthBtn.addEventListener("click", setMonthFilter);
+        els.clearDatesBtn.addEventListener("click", clearDateFilter);
+        els.searchBtn.addEventListener("click", renderShipments);
+        els.resetBtn.addEventListener("click", resetFilters);
+        els.closeDetailsBtn.addEventListener("click", () => els.detailsModal.classList.remove("active"));
+        els.detailsModal.addEventListener("click", (e) => {
+          if (e.target === els.detailsModal) els.detailsModal.classList.remove("active");
+        });
+
+        loadAll().catch(err => {
+          els.tbody.innerHTML = `<tr><td colspan="14" class="empty">${escapeHtml(err.message)}</td></tr>`;
+        });
+      }
+
+      init();
     })();
   </script>
 </body>

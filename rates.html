@@ -150,7 +150,7 @@
         <h2>💰 Booking Rates <span id="editState" class="mode-badge" style="display:none;">Edit Mode</span></h2>
         <p>Manage courier rates by shipment mode, transport mode, type, and weight slab</p>
       </div>
-      <button onclick="window.location.href='admin.html'">Back to Admin</button>
+      <button type="button" onclick="window.location.href='admin.html'">Back to Admin</button>
     </div>
 
     <div class="content">
@@ -231,62 +231,129 @@
   </div>
 
   <script>
-    if (localStorage.getItem("loggedIn") !== "true") window.location.href = "login.html";
-
     let editId = null;
     let rateCache = [];
 
+    const courierEl = document.getElementById("courier");
+    const shipmentModeEl = document.getElementById("shipment_mode");
+    const transportModeEl = document.getElementById("transport_mode");
+    const typeEl = document.getElementById("type");
+    const weightFromEl = document.getElementById("weight_from");
+    const weightToEl = document.getElementById("weight_to");
+    const rateEl = document.getElementById("rate");
+    const editStateEl = document.getElementById("editState");
+    const rateTableEl = document.getElementById("rateTable");
+
+    function getSessionToken() {
+      return localStorage.getItem("sessionToken") || "";
+    }
+
+    function clearAuthAndRedirect() {
+      localStorage.removeItem("loggedIn");
+      localStorage.removeItem("sessionToken");
+      localStorage.removeItem("authUser");
+      window.location.href = "login.html";
+    }
+
     async function fetchJSON(url, options = {}) {
-      const res = await fetch(url, options);
+      const headers = {
+        ...(options.headers || {})
+      };
+
+      const token = getSessionToken();
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+        headers["x-session-token"] = token;
+      }
+
+      const res = await fetch(url, {
+        ...options,
+        headers
+      });
+
       const text = await res.text();
       let data = {};
-      try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text || "Request failed" }; }
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = { error: text || "Request failed" };
+      }
+
+      if (res.status === 401) {
+        clearAuthAndRedirect();
+        throw new Error("Session expired. Please login again.");
+      }
+
       if (!res.ok) throw new Error(data.error || "Request failed");
       return data;
     }
 
+    async function ensureAuthenticated() {
+      const token = getSessionToken();
+      if (!token) {
+        clearAuthAndRedirect();
+        return false;
+      }
+
+      try {
+        const auth = await fetchJSON("/api/me");
+        localStorage.setItem("loggedIn", "true");
+        localStorage.setItem("authUser", JSON.stringify(auth.user || {}));
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }
+
     function escapeHtml(value) {
-      return String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");
+      return String(value ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#39;");
     }
 
     function clearForm() {
       editId = null;
-      courier.value = "";
-      shipment_mode.value = "";
-      transport_mode.value = "";
-      type.value = "dox";
-      weight_from.value = "";
-      weight_to.value = "";
-      rate.value = "";
-      editState.style.display = "none";
-      courier.focus();
+      courierEl.value = "";
+      shipmentModeEl.value = "";
+      transportModeEl.value = "";
+      typeEl.value = "dox";
+      weightFromEl.value = "";
+      weightToEl.value = "";
+      rateEl.value = "";
+      editStateEl.style.display = "none";
+      courierEl.focus();
     }
 
     function fillFormForEdit(rateRow) {
       editId = rateRow.id;
-      courier.value = rateRow.courier || "";
-      shipment_mode.value = rateRow.shipment_mode || "";
-      transport_mode.value = rateRow.transport_mode || "";
-      type.value = rateRow.type || "dox";
-      weight_from.value = rateRow.weight_from ?? "";
-      weight_to.value = rateRow.weight_to ?? "";
-      rate.value = rateRow.rate ?? "";
-      editState.style.display = "inline-block";
+      courierEl.value = rateRow.courier || "";
+      shipmentModeEl.value = rateRow.shipment_mode || "";
+      transportModeEl.value = rateRow.transport_mode || "";
+      typeEl.value = rateRow.type || "dox";
+      weightFromEl.value = rateRow.weight_from ?? "";
+      weightToEl.value = rateRow.weight_to ?? "";
+      rateEl.value = rateRow.rate ?? "";
+      editStateEl.style.display = "inline-block";
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     async function loadRates() {
-      rateTable.innerHTML = `<tr><td colspan="9" class="empty">Loading rates...</td></tr>`;
+      rateTableEl.innerHTML = `<tr><td colspan="9" class="empty">Loading rates...</td></tr>`;
+
       try {
         rateCache = await fetchJSON("/api/rates");
-        rateTable.innerHTML = "";
+        rateTableEl.innerHTML = "";
+
         if (!rateCache.length) {
-          rateTable.innerHTML = `<tr><td colspan="9" class="empty">No rates found</td></tr>`;
+          rateTableEl.innerHTML = `<tr><td colspan="9" class="empty">No rates found</td></tr>`;
           return;
         }
 
         rateCache.forEach(r => {
-          rateTable.innerHTML += `
+          rateTableEl.innerHTML += `
             <tr>
               <td>${escapeHtml(r.id)}</td>
               <td>${escapeHtml(r.courier)}</td>
@@ -306,7 +373,7 @@
           `;
         });
       } catch (err) {
-        rateTable.innerHTML = `<tr><td colspan="9" class="empty">${escapeHtml(err.message)}</td></tr>`;
+        rateTableEl.innerHTML = `<tr><td colspan="9" class="empty">${escapeHtml(err.message)}</td></tr>`;
       }
     }
 
@@ -317,13 +384,13 @@
 
     async function saveRate() {
       const payload = {
-        courier: courier.value.trim(),
-        shipment_mode: shipment_mode.value.trim(),
-        transport_mode: transport_mode.value.trim(),
-        type: type.value,
-        weight_from: weight_from.value.trim(),
-        weight_to: weight_to.value.trim(),
-        rate: rate.value.trim()
+        courier: courierEl.value.trim(),
+        shipment_mode: shipmentModeEl.value.trim(),
+        transport_mode: transportModeEl.value.trim(),
+        type: typeEl.value,
+        weight_from: weightFromEl.value.trim(),
+        weight_to: weightToEl.value.trim(),
+        rate: rateEl.value.trim()
       };
 
       if (!payload.courier || !payload.shipment_mode || !payload.transport_mode || !payload.weight_from || !payload.weight_to || !payload.rate) {
@@ -333,7 +400,7 @@
 
       try {
         if (editId) {
-          await fetchJSON(`/api/rates/${editId}`, {
+          await fetchJSON(`/api/rates/${encodeURIComponent(editId)}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
@@ -347,6 +414,7 @@
           });
           alert("Rate added successfully");
         }
+
         clearForm();
         loadRates();
       } catch (err) {
@@ -356,8 +424,9 @@
 
     async function deleteRate(id) {
       if (!confirm("Delete this rate?")) return;
+
       try {
-        await fetchJSON(`/api/rates/${id}`, { method: "DELETE" });
+        await fetchJSON(`/api/rates/${encodeURIComponent(id)}`, { method: "DELETE" });
         if (editId === id) clearForm();
         loadRates();
       } catch (err) {
@@ -365,7 +434,13 @@
       }
     }
 
-    loadRates();
+    async function init() {
+      const ok = await ensureAuthenticated();
+      if (!ok) return;
+      loadRates();
+    }
+
+    init();
   </script>
 </body>
 </html>

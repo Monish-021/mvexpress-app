@@ -86,6 +86,64 @@ function sanitizeAccount(row) {
   };
 }
 
+function getSessionTokenFromReq(req) {
+  const authHeader = cleanText(req.headers.authorization);
+  const headerToken = cleanText(req.headers["x-session-token"]);
+
+  if (authHeader.toLowerCase().startsWith("bearer ")) {
+    return cleanText(authHeader.slice(7));
+  }
+
+  if (headerToken) return headerToken;
+
+  return "";
+}
+
+async function getSessionUser(req) {
+  const token = getSessionTokenFromReq(req);
+  if (!token) return null;
+
+  const result = await pool.query(
+    `
+    SELECT
+      s.token,
+      s.expires_at,
+      a.id,
+      a.username,
+      a.role,
+      a.created_at
+    FROM sessions s
+    JOIN accounts a ON a.id = s.account_id
+    WHERE s.token = $1
+      AND s.expires_at > NOW()
+    LIMIT 1
+    `,
+    [token]
+  );
+
+  if (!result.rows.length) return null;
+
+  return {
+    token: result.rows[0].token,
+    user: sanitizeAccount(result.rows[0]),
+    expiresAt: result.rows[0].expires_at
+  };
+}
+
+async function requireAuth(req, res, next) {
+  try {
+    const session = await getSessionUser(req);
+    if (!session) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    req.auth = session;
+    next();
+  } catch (err) {
+    res.status(500).json({ error: "Authentication check failed" });
+  }
+}
+
 async function initDatabase() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS accounts (
@@ -94,6 +152,15 @@ async function initDatabase() {
       password TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'staff',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      token TEXT PRIMARY KEY,
+      account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      expires_at TIMESTAMPTZ NOT NULL
     );
   `);
 
@@ -130,6 +197,10 @@ async function initDatabase() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+}
+
+async function cleanupExpiredSessions() {
+  await pool.query(`DELETE FROM sessions WHERE expires_at <= NOW()`);
 }
 
 async function ensureDefaultAdminAccount() {
@@ -276,7 +347,7 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-/* ---------------- LOGIN ---------------- */
+/* ---------------- LOGIN / AUTH ---------------- */
 
 app.post("/api/login", async (req, res) => {
   try {
@@ -294,17 +365,54 @@ app.post("/api/login", async (req, res) => {
 
     const account = result.rows[0];
 
-    if (account && cleanText(account.password) === password) {
-      return res.json({
-        success: true,
-        user: sanitizeAccount(account)
-      });
+    if (!account || cleanText(account.password) !== password) {
+      return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    return res.status(401).json({ error: "Invalid credentials" });
+    const sessionToken = uuidv4();
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    await pool.query(
+      `INSERT INTO sessions (token, account_id, expires_at)
+       VALUES ($1, $2, $3::timestamptz)`,
+      [sessionToken, account.id, expiresAt]
+    );
+
+    return res.json({
+      success: true,
+      user: sanitizeAccount(account),
+      sessionToken,
+      expiresAt
+    });
   } catch (err) {
     res.status(500).json({ error: "Login failed" });
   }
+});
+
+app.post("/api/logout", requireAuth, async (req, res) => {
+  try {
+    await pool.query(`DELETE FROM sessions WHERE token = $1`, [req.auth.token]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Logout failed" });
+  }
+});
+
+app.get("/api/me", requireAuth, async (req, res) => {
+  res.json({
+    authenticated: true,
+    user: req.auth.user,
+    expiresAt: req.auth.expiresAt
+  });
+});
+
+app.get("/api/auth/check", requireAuth, async (req, res) => {
+  res.json({
+    success: true,
+    authenticated: true,
+    user: req.auth.user,
+    expiresAt: req.auth.expiresAt
+  });
 });
 
 /* ---------------- ACCOUNTS ---------------- */
@@ -889,6 +997,7 @@ app.delete("/api/credits/:id", async (req, res) => {
 async function startServer() {
   try {
     await initDatabase();
+    await cleanupExpiredSessions();
     await migrateLegacyDataIfNeeded();
 
     app.listen(PORT, "0.0.0.0", () => {

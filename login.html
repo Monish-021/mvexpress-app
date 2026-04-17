@@ -164,43 +164,87 @@
         <input id="password" type="password" autocomplete="off" />
       </div>
 
-      <button class="login-btn" onclick="login()">Login</button>
+      <button class="login-btn" id="loginBtn" onclick="login()">Login</button>
       <div class="msg" id="msg"></div>
     </div>
   </div>
 
   <script>
+    const usernameEl = document.getElementById("username");
+    const passwordEl = document.getElementById("password");
+    const msg = document.getElementById("msg");
+    const loginBtn = document.getElementById("loginBtn");
+
+    function setMessage(text, type = "") {
+      msg.textContent = text || "";
+      msg.className = `msg ${type}`.trim();
+    }
+
+    async function fetchJSON(url, options = {}) {
+      const res = await fetch(url, options);
+      const text = await res.text();
+
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = { error: text || "Request failed" };
+      }
+
+      if (!res.ok) {
+        throw new Error(data.error || "Request failed");
+      }
+
+      return data;
+    }
+
     async function login() {
-      const username = document.getElementById("username").value.trim();
-      const password = document.getElementById("password").value.trim();
-      const msg = document.getElementById("msg");
-      msg.textContent = "";
-      msg.className = "msg";
+      const username = usernameEl.value.trim();
+      const password = passwordEl.value.trim();
+
+      setMessage("");
+
+      if (!username || !password) {
+        setMessage("Username and password are required", "error");
+        return;
+      }
+
+      loginBtn.disabled = true;
+      loginBtn.textContent = "Logging in...";
 
       try {
-        const res = await fetch("/api/login", {
+        const data = await fetchJSON("/api/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username, password })
         });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Login failed");
-
         localStorage.setItem("loggedIn", "true");
-        msg.textContent = "Login successful";
-        msg.className = "msg success";
+        localStorage.setItem("sessionToken", data.sessionToken || "");
+        localStorage.setItem("authUser", JSON.stringify(data.user || {}));
+
+        setMessage("Login successful", "success");
 
         setTimeout(() => {
           window.location.href = "admin.html";
         }, 300);
       } catch (err) {
-        msg.textContent = err.message;
-        msg.className = "msg error";
+        localStorage.removeItem("loggedIn");
+        localStorage.removeItem("sessionToken");
+        localStorage.removeItem("authUser");
+
+        setMessage(err.message, "error");
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = "Login";
       }
     }
 
-    document.getElementById("password").addEventListener("keydown", function(e) {
+    passwordEl.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") login();
+    });
+
+    usernameEl.addEventListener("keydown", function(e) {
       if (e.key === "Enter") login();
     });
   </script>

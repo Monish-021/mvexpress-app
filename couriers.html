@@ -133,7 +133,7 @@
         <h2>🚚 Courier Management <span id="editState" class="mode-badge" style="display:none;">Edit Mode</span></h2>
         <p>Add, edit and manage courier companies professionally</p>
       </div>
-      <button onclick="window.location.href='admin.html'">Back to Admin</button>
+      <button type="button" onclick="window.location.href='admin.html'">Back to Admin</button>
     </div>
 
     <div class="content">
@@ -163,64 +163,117 @@
   </div>
 
   <script>
-    if (localStorage.getItem("loggedIn") !== "true") window.location.href = "login.html";
+    const nameEl = document.getElementById("name");
+    const trackingLinkEl = document.getElementById("trackingLink");
+    const editStateEl = document.getElementById("editState");
+    const tbodyEl = document.getElementById("tbody");
 
     let editId = null;
     let courierCache = [];
 
+    function getSessionToken() {
+      return localStorage.getItem("sessionToken") || "";
+    }
+
+    function clearAuthAndRedirect() {
+      localStorage.removeItem("loggedIn");
+      localStorage.removeItem("sessionToken");
+      localStorage.removeItem("authUser");
+      window.location.href = "login.html";
+    }
+
     async function fetchJSON(url, options = {}) {
-      const res = await fetch(url, options);
+      const headers = {
+        ...(options.headers || {})
+      };
+
+      const token = getSessionToken();
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+        headers["x-session-token"] = token;
+      }
+
+      const res = await fetch(url, {
+        ...options,
+        headers
+      });
+
       const text = await res.text();
       let data = {};
-      try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text || "Request failed" }; }
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = { error: text || "Request failed" };
+      }
+
+      if (res.status === 401) {
+        clearAuthAndRedirect();
+        throw new Error("Session expired. Please login again.");
+      }
+
       if (!res.ok) throw new Error(data.error || "Request failed");
       return data;
     }
 
+    async function ensureAuthenticated() {
+      const token = getSessionToken();
+      if (!token) {
+        clearAuthAndRedirect();
+        return false;
+      }
+
+      try {
+        const auth = await fetchJSON("/api/me");
+        localStorage.setItem("loggedIn", "true");
+        localStorage.setItem("authUser", JSON.stringify(auth.user || {}));
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }
+
     function escapeHtml(value) {
-      return String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");
+      return String(value ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#39;");
     }
 
     function clearForm() {
-  const nameEl = document.getElementById("name");
-  const trackingLinkEl = document.getElementById("trackingLink");
-  const editStateEl = document.getElementById("editState");
+      editId = null;
+      nameEl.value = "";
+      trackingLinkEl.value = "";
+      editStateEl.style.display = "none";
+      nameEl.focus();
+    }
 
-  editId = null;
-  if (nameEl) nameEl.value = "";
-  if (trackingLinkEl) trackingLinkEl.value = "";
-  if (editStateEl) editStateEl.style.display = "none";
-  if (nameEl) nameEl.focus();
-}
-
-     function fillFormForEdit(courier) {
-  const nameEl = document.getElementById("name");
-  const trackingLinkEl = document.getElementById("trackingLink");
-  const editStateEl = document.getElementById("editState");
-
-  editId = courier.id;
-  if (nameEl) nameEl.value = courier.name || "";
-  if (trackingLinkEl) trackingLinkEl.value = courier.trackingLink || "";
-  if (editStateEl) editStateEl.style.display = "inline-block";
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
+    function fillFormForEdit(courier) {
+      editId = courier.id;
+      nameEl.value = courier.name || "";
+      trackingLinkEl.value = courier.trackingLink || "";
+      editStateEl.style.display = "inline-block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
 
     async function loadCouriers() {
-      tbody.innerHTML = `<tr><td colspan="4" class="empty">Loading couriers...</td></tr>`;
+      tbodyEl.innerHTML = `<tr><td colspan="4" class="empty">Loading couriers...</td></tr>`;
       try {
         courierCache = await fetchJSON("/api/couriers");
-        tbody.innerHTML = "";
+        tbodyEl.innerHTML = "";
+
         if (!courierCache.length) {
-          tbody.innerHTML = `<tr><td colspan="4" class="empty">No couriers found</td></tr>`;
+          tbodyEl.innerHTML = `<tr><td colspan="4" class="empty">No couriers found</td></tr>`;
           return;
         }
 
         courierCache.forEach(c => {
-          tbody.innerHTML += `
+          tbodyEl.innerHTML += `
             <tr>
               <td>${escapeHtml(c.id)}</td>
               <td>${escapeHtml(c.name || "-")}</td>
-              <td>${c.trackingLink ? `<a href="${escapeHtml(c.trackingLink)}" target="_blank">Open Link</a>` : "-"}</td>
+              <td>${c.trackingLink ? `<a href="${escapeHtml(c.trackingLink)}" target="_blank" rel="noopener noreferrer">Open Link</a>` : "-"}</td>
               <td>
                 <div class="action-group">
                   <button class="edit" onclick="fillFormForEditById('${c.id}')">Edit</button>
@@ -231,7 +284,7 @@
           `;
         });
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="4" class="empty">${escapeHtml(err.message)}</td></tr>`;
+        tbodyEl.innerHTML = `<tr><td colspan="4" class="empty">${escapeHtml(err.message)}</td></tr>`;
       }
     }
 
@@ -240,14 +293,11 @@
       if (courier) fillFormForEdit(courier);
     }
 
-   async function saveCourier() {
-  const nameEl = document.getElementById("name");
-  const trackingLinkEl = document.getElementById("trackingLink");
-
-  const payload = {
-    name: (nameEl?.value || "").trim(),
-    trackingLink: (trackingLinkEl?.value || "").trim()
-  };
+    async function saveCourier() {
+      const payload = {
+        name: nameEl.value.trim(),
+        trackingLink: trackingLinkEl.value.trim()
+      };
 
       if (!payload.name) {
         alert("Courier name is required");
@@ -256,7 +306,7 @@
 
       try {
         if (editId) {
-          await fetchJSON(`/api/couriers/${editId}`, {
+          await fetchJSON(`/api/couriers/${encodeURIComponent(editId)}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
@@ -270,6 +320,7 @@
           });
           alert("Courier added successfully");
         }
+
         clearForm();
         loadCouriers();
       } catch (err) {
@@ -279,8 +330,9 @@
 
     async function deleteCourier(id) {
       if (!confirm("Delete this courier?")) return;
+
       try {
-        await fetchJSON(`/api/couriers/${id}`, { method: "DELETE" });
+        await fetchJSON(`/api/couriers/${encodeURIComponent(id)}`, { method: "DELETE" });
         if (editId === id) clearForm();
         loadCouriers();
       } catch (err) {
@@ -288,7 +340,13 @@
       }
     }
 
-    loadCouriers();
+    async function init() {
+      const ok = await ensureAuthenticated();
+      if (!ok) return;
+      loadCouriers();
+    }
+
+    init();
   </script>
 </body>
 </html>
