@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Booking Rates</title>
+  <style>
+    :root{
+      --primary:#2563eb;
+      --accent:#38bdf8;
+      --border:#dbe3ef;
+      --text:#0f172a;
+      --muted:#64748b;
+      --shadow:0 16px 34px rgba(15,23,42,0.08);
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      padding:20px;
+      font-family:"Segoe UI", Arial, sans-serif;
+      background:radial-gradient(circle at top left, rgba(56,189,248,0.10), transparent 25%), linear-gradient(135deg, #eff6ff, #f8fbff);
+      color:var(--text);
+    }
+    .container{
+      max-width:1400px;
+      margin:auto;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:24px;
+      overflow:hidden;
+      box-shadow:var(--shadow);
+    }
+    .header{
+      background:linear-gradient(135deg, var(--primary), var(--accent));
+      color:#fff;
+      padding:22px 26px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .header h2{ margin:0; font-size:30px; font-weight:900; }
+    .header p{ margin:6px 0 0; font-size:14px; color:rgba(255,255,255,0.92); }
+    .header button{
+      border:none; border-radius:14px; padding:11px 15px;
+      background:rgba(255,255,255,0.18); color:#fff; font-weight:800; cursor:pointer;
+    }
+    .content{ padding:22px; }
+    .panel{
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:20px;
+      padding:18px;
+      margin-bottom:18px;
+    }
+    .panel-title{ margin:0 0 14px; font-size:22px; font-weight:900; }
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0,1fr));
+      gap:12px;
+    }
+    .field{ display:flex; flex-direction:column; gap:6px; }
+    .field label{ font-size:13px; font-weight:800; color:#334155; }
+    input, select{
+      width:100%;
+      padding:12px 14px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      outline:none;
+      background:#fff;
+      font-size:14px;
+      min-height:46px;
+    }
+    input:focus, select:focus{
+      border-color:#2563eb;
+      box-shadow:0 0 0 4px rgba(37,99,235,0.12);
+    }
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:16px;
+    }
+    button{
+      border:none; border-radius:12px; padding:11px 15px;
+      cursor:pointer; font-weight:800; color:#fff; min-height:40px;
+    }
+    .save{ background:linear-gradient(135deg, #2563eb, #38bdf8); }
+    .clear{ background:#64748b; }
+    .edit{ background:#f59e0b; }
+    .delete{ background:#dc2626; }
+    .table-wrap{
+      overflow:auto;
+      border:1px solid var(--border);
+      border-radius:18px;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:#fff;
+    }
+    th{
+      background:#eef5ff;
+      color:#1e3a8a;
+      padding:13px 10px;
+      border-bottom:1px solid var(--border);
+      font-size:13px;
+      text-align:center;
+    }
+    td{
+      padding:12px 10px;
+      text-align:center;
+      border-bottom:1px solid #edf2f7;
+      font-size:13px;
+      word-break:break-word;
+    }
+    tr:hover td{ background:#f9fbff; }
+    .action-group{
+      display:flex;
+      gap:8px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+    .empty{
+      text-align:center;
+      color:var(--muted);
+      font-weight:800;
+      padding:24px;
+    }
+    .mode-badge{
+      display:inline-block;
+      margin-left:10px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#eff6ff;
+      color:#1d4ed8;
+      font-size:12px;
+      font-weight:800;
+      vertical-align:middle;
+    }
+    @media (max-width: 1000px){ .grid{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
+    @media (max-width: 640px){ .grid{ grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h2>💰 Booking Rates <span id="editState" class="mode-badge" style="display:none;">Edit Mode</span></h2>
+        <p>Manage courier rates by shipment mode, transport mode, type, and weight slab</p>
+      </div>
+      <button onclick="window.location.href='admin.html'">Back to Admin</button>
+    </div>
+
+    <div class="content">
+      <div class="panel">
+        <h3 class="panel-title">Add / Edit Rate</h3>
+
+        <div class="grid">
+          <div class="field">
+            <label>Courier</label>
+            <input id="courier" placeholder="Enter courier name" />
+          </div>
+
+          <div class="field">
+            <label>Shipment Mode</label>
+            <input id="shipment_mode" placeholder="Example: Domestic" />
+          </div>
+
+          <div class="field">
+            <label>Transport Mode</label>
+            <input id="transport_mode" placeholder="Example: Air" />
+          </div>
+
+          <div class="field">
+            <label>Type</label>
+            <select id="type">
+              <option value="dox">dox</option>
+              <option value="non dox">non dox</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Weight From</label>
+            <input id="weight_from" type="number" step="0.01" placeholder="0" />
+          </div>
+
+          <div class="field">
+            <label>Weight To</label>
+            <input id="weight_to" type="number" step="0.01" placeholder="500" />
+          </div>
+
+          <div class="field">
+            <label>Rate</label>
+            <input id="rate" type="number" step="0.01" placeholder="Enter rate" />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="save" onclick="saveRate()">Save Rate</button>
+          <button class="clear" onclick="clearForm()">Clear</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3 class="panel-title">All Rates</h3>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Courier</th>
+                <th>Shipment Mode</th>
+                <th>Transport Mode</th>
+                <th>Type</th>
+                <th>Weight From</th>
+                <th>Weight To</th>
+                <th>Rate</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="rateTable">
+              <tr><td colspan="9" class="empty">Loading rates...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    if (localStorage.getItem("loggedIn") !== "true") window.location.href = "login.html";
+
+    let editId = null;
+    let rateCache = [];
+
+    async function fetchJSON(url, options = {}) {
+      const res = await fetch(url, options);
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text || "Request failed" }; }
+      if (!res.ok) throw new Error(data.error || "Request failed");
+      return data;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");
+    }
+
+    function clearForm() {
+      editId = null;
+      courier.value = "";
+      shipment_mode.value = "";
+      transport_mode.value = "";
+      type.value = "dox";
+      weight_from.value = "";
+      weight_to.value = "";
+      rate.value = "";
+      editState.style.display = "none";
+      courier.focus();
+    }
+
+    function fillFormForEdit(rateRow) {
+      editId = rateRow.id;
+      courier.value = rateRow.courier || "";
+      shipment_mode.value = rateRow.shipment_mode || "";
+      transport_mode.value = rateRow.transport_mode || "";
+      type.value = rateRow.type || "dox";
+      weight_from.value = rateRow.weight_from ?? "";
+      weight_to.value = rateRow.weight_to ?? "";
+      rate.value = rateRow.rate ?? "";
+      editState.style.display = "inline-block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    async function loadRates() {
+      rateTable.innerHTML = `<tr><td colspan="9" class="empty">Loading rates...</td></tr>`;
+      try {
+        rateCache = await fetchJSON("/api/rates");
+        rateTable.innerHTML = "";
+        if (!rateCache.length) {
+          rateTable.innerHTML = `<tr><td colspan="9" class="empty">No rates found</td></tr>`;
+          return;
+        }
+
+        rateCache.forEach(r => {
+          rateTable.innerHTML += `
+            <tr>
+              <td>${escapeHtml(r.id)}</td>
+              <td>${escapeHtml(r.courier)}</td>
+              <td>${escapeHtml(r.shipment_mode)}</td>
+              <td>${escapeHtml(r.transport_mode)}</td>
+              <td>${escapeHtml(r.type)}</td>
+              <td>${escapeHtml(r.weight_from)}</td>
+              <td>${escapeHtml(r.weight_to)}</td>
+              <td>${escapeHtml(r.rate)}</td>
+              <td>
+                <div class="action-group">
+                  <button class="edit" onclick="fillRateById('${r.id}')">Edit</button>
+                  <button class="delete" onclick="deleteRate('${r.id}')">Delete</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+      } catch (err) {
+        rateTable.innerHTML = `<tr><td colspan="9" class="empty">${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    function fillRateById(id) {
+      const row = rateCache.find(r => r.id === id);
+      if (row) fillFormForEdit(row);
+    }
+
+    async function saveRate() {
+      const payload = {
+        courier: courier.value.trim(),
+        shipment_mode: shipment_mode.value.trim(),
+        transport_mode: transport_mode.value.trim(),
+        type: type.value,
+        weight_from: weight_from.value.trim(),
+        weight_to: weight_to.value.trim(),
+        rate: rate.value.trim()
+      };
+
+      if (!payload.courier || !payload.shipment_mode || !payload.transport_mode || !payload.weight_from || !payload.weight_to || !payload.rate) {
+        alert("Fill all required fields");
+        return;
+      }
+
+      try {
+        if (editId) {
+          await fetchJSON(`/api/rates/${editId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          alert("Rate updated successfully");
+        } else {
+          await fetchJSON("/api/rates", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          alert("Rate added successfully");
+        }
+        clearForm();
+        loadRates();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function deleteRate(id) {
+      if (!confirm("Delete this rate?")) return;
+      try {
+        await fetchJSON(`/api/rates/${id}`, { method: "DELETE" });
+        if (editId === id) clearForm();
+        loadRates();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    loadRates();
+  </script>
+</body>
+</html>

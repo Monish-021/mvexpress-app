@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Courier Management</title>
+  <style>
+    :root{
+      --primary:#2563eb;
+      --accent:#38bdf8;
+      --border:#dbe3ef;
+      --text:#0f172a;
+      --muted:#64748b;
+      --shadow:0 16px 34px rgba(15,23,42,0.08);
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:"Segoe UI", Arial, sans-serif;
+      background:radial-gradient(circle at top left, rgba(56,189,248,0.10), transparent 25%), linear-gradient(135deg, #eff6ff, #f8fbff);
+      color:var(--text);
+      padding:20px;
+    }
+    .container{
+      max-width:1250px;
+      margin:auto;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:24px;
+      overflow:hidden;
+      box-shadow:var(--shadow);
+    }
+    .header{
+      background:linear-gradient(135deg, var(--primary), var(--accent));
+      color:#fff;
+      padding:22px 26px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .header h2{ margin:0; font-size:28px; font-weight:900; }
+    .header p{ margin:6px 0 0; font-size:14px; color:rgba(255,255,255,0.9); }
+    .header button{
+      border:none; border-radius:14px; padding:11px 14px;
+      background:rgba(255,255,255,0.16); color:#fff; font-weight:800; cursor:pointer;
+    }
+    .content{ padding:22px; }
+    .form{
+      display:grid;
+      grid-template-columns:1fr 1fr auto auto;
+      gap:12px;
+      margin-bottom:18px;
+    }
+    input{
+      padding:12px 14px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      outline:none;
+      font-size:14px;
+      min-height:44px;
+    }
+    input:focus{
+      border-color:var(--primary);
+      box-shadow:0 0 0 4px rgba(37,99,235,0.12);
+    }
+    button{
+      border:none; border-radius:12px; padding:10px 14px;
+      cursor:pointer; font-weight:800; color:#fff; min-height:40px;
+    }
+    .save{ background:linear-gradient(135deg, #2563eb, #38bdf8); }
+    .clear{ background:#64748b; }
+    .edit{ background:#f59e0b; }
+    .delete{ background:#dc2626; }
+    .table-wrap{
+      overflow:auto;
+      border:1px solid var(--border);
+      border-radius:18px;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:#fff;
+    }
+    th{
+      background:#eef5ff;
+      color:#1e3a8a;
+      padding:13px 10px;
+      border-bottom:1px solid var(--border);
+      font-size:13px;
+      text-align:center;
+    }
+    td{
+      padding:12px 10px;
+      text-align:center;
+      border-bottom:1px solid #edf2f7;
+      font-size:13px;
+      word-break:break-word;
+    }
+    tr:hover td{ background:#f9fbff; }
+    .action-group{
+      display:flex;
+      gap:8px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+    .empty{
+      text-align:center;
+      color:var(--muted);
+      font-weight:800;
+      padding:24px;
+    }
+    a{ color:#2563eb; text-decoration:none; font-weight:700; }
+    .mode-badge{
+      display:inline-block;
+      margin-left:10px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#eff6ff;
+      color:#1d4ed8;
+      font-size:12px;
+      font-weight:800;
+      vertical-align:middle;
+    }
+    @media (max-width: 900px){ .form{ grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h2>🚚 Courier Management <span id="editState" class="mode-badge" style="display:none;">Edit Mode</span></h2>
+        <p>Add, edit and manage courier companies professionally</p>
+      </div>
+      <button onclick="window.location.href='admin.html'">Back to Admin</button>
+    </div>
+
+    <div class="content">
+      <div class="form">
+        <input id="name" placeholder="Courier Name" />
+        <input id="trackingLink" placeholder="Tracking Link (optional)" />
+        <button class="save" onclick="saveCourier()">Save Courier</button>
+        <button class="clear" onclick="clearForm()">Clear</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:90px;">ID</th>
+              <th>Courier Name</th>
+              <th>Tracking Link</th>
+              <th style="width:230px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="4" class="empty">Loading couriers...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    if (localStorage.getItem("loggedIn") !== "true") window.location.href = "login.html";
+
+    let editId = null;
+    let courierCache = [];
+
+    async function fetchJSON(url, options = {}) {
+      const res = await fetch(url, options);
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text || "Request failed" }; }
+      if (!res.ok) throw new Error(data.error || "Request failed");
+      return data;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");
+    }
+
+    function clearForm() {
+  const nameEl = document.getElementById("name");
+  const trackingLinkEl = document.getElementById("trackingLink");
+  const editStateEl = document.getElementById("editState");
+
+  editId = null;
+  if (nameEl) nameEl.value = "";
+  if (trackingLinkEl) trackingLinkEl.value = "";
+  if (editStateEl) editStateEl.style.display = "none";
+  if (nameEl) nameEl.focus();
+}
+
+     function fillFormForEdit(courier) {
+  const nameEl = document.getElementById("name");
+  const trackingLinkEl = document.getElementById("trackingLink");
+  const editStateEl = document.getElementById("editState");
+
+  editId = courier.id;
+  if (nameEl) nameEl.value = courier.name || "";
+  if (trackingLinkEl) trackingLinkEl.value = courier.trackingLink || "";
+  if (editStateEl) editStateEl.style.display = "inline-block";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+    async function loadCouriers() {
+      tbody.innerHTML = `<tr><td colspan="4" class="empty">Loading couriers...</td></tr>`;
+      try {
+        courierCache = await fetchJSON("/api/couriers");
+        tbody.innerHTML = "";
+        if (!courierCache.length) {
+          tbody.innerHTML = `<tr><td colspan="4" class="empty">No couriers found</td></tr>`;
+          return;
+        }
+
+        courierCache.forEach(c => {
+          tbody.innerHTML += `
+            <tr>
+              <td>${escapeHtml(c.id)}</td>
+              <td>${escapeHtml(c.name || "-")}</td>
+              <td>${c.trackingLink ? `<a href="${escapeHtml(c.trackingLink)}" target="_blank">Open Link</a>` : "-"}</td>
+              <td>
+                <div class="action-group">
+                  <button class="edit" onclick="fillFormForEditById('${c.id}')">Edit</button>
+                  <button class="delete" onclick="deleteCourier('${c.id}')">Delete</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="4" class="empty">${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    function fillFormForEditById(id) {
+      const courier = courierCache.find(c => c.id === id);
+      if (courier) fillFormForEdit(courier);
+    }
+
+   async function saveCourier() {
+  const nameEl = document.getElementById("name");
+  const trackingLinkEl = document.getElementById("trackingLink");
+
+  const payload = {
+    name: (nameEl?.value || "").trim(),
+    trackingLink: (trackingLinkEl?.value || "").trim()
+  };
+
+      if (!payload.name) {
+        alert("Courier name is required");
+        return;
+      }
+
+      try {
+        if (editId) {
+          await fetchJSON(`/api/couriers/${editId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          alert("Courier updated successfully");
+        } else {
+          await fetchJSON("/api/couriers", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          alert("Courier added successfully");
+        }
+        clearForm();
+        loadCouriers();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function deleteCourier(id) {
+      if (!confirm("Delete this courier?")) return;
+      try {
+        await fetchJSON(`/api/couriers/${id}`, { method: "DELETE" });
+        if (editId === id) clearForm();
+        loadCouriers();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    loadCouriers();
+  </script>
+</body>
+</html>

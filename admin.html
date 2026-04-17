@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MV EXPRESS Admin</title>
+  <style>
+    :root{
+      --primary:#2563eb;
+      --primary-dark:#1d4ed8;
+      --accent:#38bdf8;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --border:#dbe3ef;
+      --success:#16a34a;
+      --warning:#f59e0b;
+      --shadow:0 16px 34px rgba(15,23,42,0.08);
+      --font:"Segoe UI", Arial, sans-serif;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:var(--font);
+      background:
+        radial-gradient(circle at top left, rgba(56,189,248,0.10), transparent 25%),
+        linear-gradient(135deg, #eff6ff, #f8fbff);
+      color:var(--text);
+    }
+    .topbar{
+      position:sticky;
+      top:0;
+      z-index:999;
+      background:linear-gradient(135deg, var(--primary), var(--accent));
+      padding:14px 18px;
+      box-shadow:0 10px 26px rgba(37,99,235,0.22);
+    }
+    .topbar-inner{
+      max-width:1800px;
+      margin:auto;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:16px;
+      flex-wrap:wrap;
+    }
+    .brand{
+      color:#fff;
+      min-width:280px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .brand-logo{
+      width:58px;
+      height:58px;
+      border-radius:16px;
+      background:#fff;
+      padding:6px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      box-shadow:0 8px 18px rgba(0,0,0,0.10);
+      flex-shrink:0;
+    }
+    .brand-logo img{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+    }
+    .brand h1{
+      margin:0;
+      font-size:26px;
+      font-weight:900;
+      line-height:1.05;
+    }
+    .brand p{
+      margin:4px 0 0;
+      font-size:12px;
+      color:rgba(255,255,255,0.88);
+    }
+    .nav{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+      flex:1;
+    }
+    .nav-btn{
+      border:none;
+      border-radius:14px;
+      padding:10px 14px;
+      background:rgba(255,255,255,0.16);
+      color:#fff;
+      font-weight:800;
+      cursor:pointer;
+      font-size:13px;
+      min-height:40px;
+      white-space:nowrap;
+      transition:0.2s ease;
+    }
+    .nav-btn:hover{
+      background:rgba(255,255,255,0.26);
+      transform:translateY(-1px);
+    }
+    .dropdown{ position:relative; }
+    .dropdown-menu{
+      position:absolute;
+      top:46px;
+      right:0;
+      min-width:180px;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:16px;
+      box-shadow:0 16px 30px rgba(15,23,42,0.15);
+      padding:8px;
+      display:none;
+      z-index:1001;
+    }
+    .dropdown.open .dropdown-menu{ display:block; }
+    .dropdown-item{
+      width:100%;
+      border:none;
+      background:#fff;
+      color:var(--text);
+      text-align:left;
+      padding:11px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:700;
+      font-size:14px;
+    }
+    .dropdown-item:hover{
+      background:#eff6ff;
+      color:var(--primary-dark);
+    }
+    .page{
+      max-width:1800px;
+      margin:auto;
+      padding:16px;
+    }
+    .toolbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:16px;
+    }
+    .toolbar-right{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .toolbar label{
+      font-size:13px;
+      font-weight:800;
+      color:#334155;
+    }
+    .toolbar input[type="color"], .toolbar select{
+      padding:10px 12px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:#fff;
+      outline:none;
+      font-size:13px;
+      min-height:40px;
+    }
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0,1fr));
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .stat-card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:20px;
+      padding:16px;
+      box-shadow:var(--shadow);
+    }
+    .stat-label{
+      color:var(--muted);
+      font-size:13px;
+      font-weight:700;
+      margin-bottom:8px;
+    }
+    .stat-value{
+      font-size:30px;
+      font-weight:900;
+      color:var(--text);
+      line-height:1;
+    }
+    .panel{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:22px;
+      padding:16px;
+      box-shadow:var(--shadow);
+      margin-bottom:16px;
+    }
+    .panel-title{
+      margin:0 0 14px;
+      font-size:22px;
+      font-weight:900;
+    }
+    .filters{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+      gap:12px;
+    }
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      position:relative;
+    }
+    .field label{
+      font-size:13px;
+      font-weight:700;
+      color:#334155;
+    }
+    .field input{
+      width:100%;
+      padding:11px 12px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      outline:none;
+      background:#fff;
+      min-height:42px;
+      font-size:13px;
+    }
+    .field input:focus{
+      border-color:var(--primary);
+      box-shadow:0 0 0 4px rgba(37,99,235,0.12);
+    }
+    .quick-date-row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:14px;
+    }
+    .quick-chip{
+      border:none;
+      border-radius:999px;
+      padding:10px 14px;
+      background:#eff6ff;
+      color:#1d4ed8;
+      font-weight:800;
+      cursor:pointer;
+      font-size:13px;
+    }
+    .filter-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:14px;
+    }
+    .btn{
+      border:none;
+      border-radius:12px;
+      padding:9px 12px;
+      cursor:pointer;
+      font-weight:800;
+      font-size:13px;
+      line-height:1;
+      min-height:36px;
+      white-space:nowrap;
+    }
+    .btn-primary{ background:linear-gradient(135deg, var(--primary), var(--accent)); color:#fff; }
+    .btn-dark{ background:#0f172a; color:#fff; }
+    .btn-success{ background:var(--success); color:#fff; }
+    .btn-warning{ background:var(--warning); color:#fff; }
+    .btn-info{ background:#2563eb; color:#fff; }
+
+    .search-select{ position:relative; }
+    .search-select input{ padding-right:36px; }
+    .search-arrow{
+      position:absolute;
+      right:12px;
+      top:50%;
+      transform:translateY(-50%);
+      font-size:12px;
+      color:#64748b;
+      pointer-events:none;
+    }
+    .search-options{
+      position:absolute;
+      top:calc(100% + 6px);
+      left:0;
+      right:0;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:16px;
+      box-shadow:0 16px 30px rgba(15,23,42,0.12);
+      padding:8px;
+      display:none;
+      max-height:220px;
+      overflow:auto;
+      z-index:50;
+    }
+    .search-select.open .search-options{ display:block; }
+    .search-option{
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-size:13px;
+      font-weight:700;
+      color:#0f172a;
+    }
+    .search-option:hover{
+      background:#eff6ff;
+      color:#1d4ed8;
+    }
+
+    .table-wrap{
+      overflow:hidden;
+      border:1px solid var(--border);
+      border-radius:18px;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      table-layout:fixed;
+      background:#fff;
+    }
+    th{
+      background:#eef5ff;
+      color:#1e3a8a;
+      padding:12px 8px;
+      text-align:center;
+      font-size:12px;
+      border-bottom:1px solid var(--border);
+      white-space:nowrap;
+    }
+    td{
+      padding:10px 8px;
+      text-align:center;
+      font-size:12px;
+      border-bottom:1px solid #edf2f7;
+      vertical-align:middle;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    tr:hover td{ background:#f9fbff; }
+    .nowrap{ white-space:nowrap; }
+    .wrap{ white-space:normal; word-break:break-word; }
+
+    .badge{
+      display:inline-block;
+      padding:6px 10px;
+      border-radius:999px;
+      color:#fff;
+      font-size:11px;
+      font-weight:900;
+      white-space:nowrap;
+    }
+    .Booked{ background:#6b7280; }
+    .InTransit{ background:#f59e0b; }
+    .OutforDelivery{ background:#0ea5e9; }
+    .Delivered{ background:#16a34a; }
+    .RTO{ background:#dc2626; }
+    .AddressNotFound{ background:#7c3aed; }
+    .DoorLock{ background:#334155; }
+    .LoadLateArrived{ background:#ea580c; }
+
+    .status-stack{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:6px;
+    }
+    .status-stack select{
+      width:100%;
+      max-width:140px;
+      padding:7px 8px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      font-size:12px;
+      min-height:34px;
+    }
+    .action-buttons{
+      display:flex;
+      gap:6px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+    .empty{
+      padding:28px;
+      text-align:center;
+      color:var(--muted);
+      font-weight:800;
+    }
+
+    .modal{
+      position:fixed;
+      inset:0;
+      background:rgba(15,23,42,0.45);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      z-index:2000;
+    }
+    .modal.active{ display:flex; }
+    .modal-card{
+      width:100%;
+      max-width:980px;
+      max-height:90vh;
+      overflow:auto;
+      background:#fff;
+      border-radius:22px;
+      box-shadow:0 24px 50px rgba(0,0,0,0.25);
+      overflow-x:hidden;
+    }
+    .modal-head{
+      position:sticky;
+      top:0;
+      background:linear-gradient(135deg, var(--primary), var(--accent));
+      color:#fff;
+      padding:18px 22px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      z-index:2;
+    }
+    .modal-head h3{ margin:0; font-size:22px; font-weight:900; }
+    .close-btn{
+      background:rgba(255,255,255,0.16);
+      color:#fff;
+      border:none;
+      border-radius:12px;
+      padding:8px 12px;
+      cursor:pointer;
+      font-weight:800;
+    }
+    .modal-body{
+      padding:20px;
+      display:grid;
+      grid-template-columns:repeat(2, 1fr);
+      gap:14px;
+    }
+    .detail{
+      background:#f8fbff;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+      min-height:76px;
+    }
+    .detail-label{
+      color:var(--muted);
+      font-size:12px;
+      font-weight:800;
+      margin-bottom:6px;
+    }
+    .detail-value{
+      color:var(--text);
+      font-size:14px;
+      font-weight:700;
+      word-break:break-word;
+      white-space:normal;
+    }
+
+    @media (max-width: 1400px){
+      table{ table-layout:auto; }
+      .table-wrap{ overflow-x:auto; }
+    }
+    @media (max-width: 1100px){
+      .stats{ grid-template-columns:repeat(2, 1fr); }
+    }
+    @media (max-width: 760px){
+      .stats{ grid-template-columns:1fr; }
+      .modal-body{ grid-template-columns:1fr; }
+      .table-wrap{ overflow-x:auto; }
+      table{ min-width:1400px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-logo"><img src="./logo.png?v=5" alt="Logo" /></div>
+        <div>
+          <h1>MV EXPRESS Admin</h1>
+          <p>Courier booking dashboard for your shop</p>
+        </div>
+      </div>
+
+      <div class="nav">
+        <button class="nav-btn" onclick="window.location.href='booking.html'">+ New Booking</button>
+        <button class="nav-btn" onclick="window.location.href='rates.html'">Booking Rates</button>
+        <button class="nav-btn" onclick="window.location.href='couriers.html'">Couriers</button>
+        <button class="nav-btn" onclick="window.location.href='credit.html'">Credit</button>
+        <button class="nav-btn" onclick="window.location.href='volumetric.html'">Volumetric</button>
+        <button class="nav-btn" onclick="window.location.href='tracking.html'">Tracking</button>
+        <button class="nav-btn" onclick="alert('Stock page can be added next')">Stock</button>
+
+        <div class="dropdown" id="accountDropdown">
+          <button class="nav-btn" id="accountBtn">Account ▾</button>
+          <div class="dropdown-menu">
+          <button class="dropdown-item" onclick="window.location.href='accounts.html'">Add Account</button>
+          <button class="dropdown-item" id="logoutBtn">Logout</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="toolbar">
+      <div></div>
+      <div class="toolbar-right">
+        <label>Colour</label>
+        <input type="color" id="themeColor" value="#2563eb">
+        <label>Font</label>
+        <select id="fontSelect">
+          <option value='"Segoe UI", Arial, sans-serif'>Segoe UI</option>
+          <option value='Arial, sans-serif'>Arial</option>
+          <option value='Verdana, sans-serif'>Verdana</option>
+          <option value='Tahoma, sans-serif'>Tahoma</option>
+          <option value='Georgia, serif'>Georgia</option>
+          <option value='"Times New Roman", serif'>Times New Roman</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card"><div class="stat-label">Total Shipments</div><div class="stat-value" id="totalShipments">0</div></div>
+      <div class="stat-card"><div class="stat-label">Booked</div><div class="stat-value" id="bookedCount">0</div></div>
+      <div class="stat-card"><div class="stat-label">Delivered</div><div class="stat-value" id="deliveredCount">0</div></div>
+      <div class="stat-card"><div class="stat-label">RTO</div><div class="stat-value" id="rtoCount">0</div></div>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel-title">Shipment Filters</h2>
+
+      <div class="filters">
+        <div class="field"><label>POD Number</label><input id="podSearch" placeholder="Search POD"></div>
+        <div class="field"><label>Reference</label><input id="refSearch" placeholder="Search reference"></div>
+        <div class="field"><label>Third Party AWB</label><input id="tpSearch" placeholder="Search TP#"></div>
+        <div class="field"><label>Sender Name</label><input id="senderNameSearch" placeholder="Search sender name"></div>
+        <div class="field"><label>Receiver Name</label><input id="receiverNameSearch" placeholder="Search receiver name"></div>
+        <div class="field"><label>Sender Phone</label><input id="senderPhoneSearch" placeholder="Search sender phone"></div>
+        <div class="field"><label>Receiver Phone</label><input id="receiverPhoneSearch" placeholder="Search receiver phone"></div>
+        <div class="field"><label>From Date</label><input id="fromDate" type="date"></div>
+        <div class="field"><label>To Date</label><input id="toDate" type="date"></div>
+
+        <div class="field">
+          <label>Courier</label>
+          <div class="search-select" id="courierSelect">
+            <input type="text" id="courierFilter" placeholder="Search courier" autocomplete="off">
+            <span class="search-arrow">▾</span>
+            <div class="search-options" id="courierOptions"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Shipment Mode</label>
+          <div class="search-select" id="modeSelect">
+            <input type="text" id="modeFilter" placeholder="Search shipment mode" autocomplete="off">
+            <span class="search-arrow">▾</span>
+            <div class="search-options" id="modeOptions"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Status</label>
+          <div class="search-select" id="statusSelect">
+            <input type="text" id="statusFilter" placeholder="Search status" autocomplete="off">
+            <span class="search-arrow">▾</span>
+            <div class="search-options" id="statusOptions"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="quick-date-row">
+        <button class="quick-chip" id="todayBtn">Today</button>
+        <button class="quick-chip" id="weekBtn">This Week</button>
+        <button class="quick-chip" id="monthBtn">This Month</button>
+        <button class="quick-chip" id="clearDatesBtn">Clear Dates</button>
+      </div>
+
+      <div class="filter-actions">
+        <button class="btn btn-primary" id="searchBtn">Search</button>
+        <button class="btn btn-dark" id="resetBtn">Reset</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel-title">All Shipments</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>POD</th>
+              <th>Reference</th>
+              <th>TP#</th>
+              <th>Leaf</th>
+              <th>Sender</th>
+              <th>Receiver</th>
+              <th>Courier</th>
+              <th>Shipment Mode</th>
+              <th>Transport Mode</th>
+              <th>Weight</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Action</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="14" class="empty">Loading shipments...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="detailsModal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3>Shipment Details</h3>
+        <button class="close-btn" id="closeDetailsBtn">Close</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      if (localStorage.getItem("loggedIn") !== "true") {
+        window.location.href = "login.html";
+        return;
+      }
+
+      const $ = (id) => document.getElementById(id);
+
+      const els = {
+        accountDropdown: $("accountDropdown"),
+        accountBtn: $("accountBtn"),
+        logoutBtn: $("logoutBtn"),
+        themeColor: $("themeColor"),
+        fontSelect: $("fontSelect"),
+        totalShipments: $("totalShipments"),
+        bookedCount: $("bookedCount"),
+        deliveredCount: $("deliveredCount"),
+        rtoCount: $("rtoCount"),
+        podSearch: $("podSearch"),
+        refSearch: $("refSearch"),
+        tpSearch: $("tpSearch"),
+        senderNameSearch: $("senderNameSearch"),
+        receiverNameSearch: $("receiverNameSearch"),
+        senderPhoneSearch: $("senderPhoneSearch"),
+        receiverPhoneSearch: $("receiverPhoneSearch"),
+        fromDate: $("fromDate"),
+        toDate: $("toDate"),
+        courierFilter: $("courierFilter"),
+        modeFilter: $("modeFilter"),
+        statusFilter: $("statusFilter"),
+        courierSelect: $("courierSelect"),
+        modeSelect: $("modeSelect"),
+        statusSelect: $("statusSelect"),
+        courierOptions: $("courierOptions"),
+        modeOptions: $("modeOptions"),
+        statusOptions: $("statusOptions"),
+        todayBtn: $("todayBtn"),
+        weekBtn: $("weekBtn"),
+        monthBtn: $("monthBtn"),
+        clearDatesBtn: $("clearDatesBtn"),
+        searchBtn: $("searchBtn"),
+        resetBtn: $("resetBtn"),
+        tbody: $("tbody"),
+        detailsModal: $("detailsModal"),
+        modalBody: $("modalBody"),
+        closeDetailsBtn: $("closeDetailsBtn")
+      };
+
+      let allShipments = [];
+      let courierValues = [];
+      let modeValues = [];
+      let statusValues = [];
+
+      function escapeHtml(value) {
+        return String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");
+      }
+
+      function statusClass(status) {
+        return String(status || "").replaceAll(" ", "");
+      }
+
+      function toDateOnly(dateValue) {
+        if (!dateValue) return "";
+        const raw = String(dateValue).trim();
+        if (raw.includes("T")) return raw.slice(0, 10);
+        if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+        const d = new Date(raw);
+        if (!Number.isNaN(d.getTime())) {
+          return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+        }
+        return "";
+      }
+
+      async function fetchJSON(url, options = {}) {
+        const res = await fetch(url, options);
+        const text = await res.text();
+        let data = {};
+        try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text || "Request failed" }; }
+        if (!res.ok) throw new Error(data.error || "Request failed");
+        return data;
+      }
+
+      function logout() {
+        localStorage.removeItem("loggedIn");
+        window.location.href = "login.html";
+      }
+
+      function changeColor(color) {
+        document.documentElement.style.setProperty("--primary", color);
+      }
+
+      function changeFont(font) {
+        document.documentElement.style.setProperty("--font", font);
+      }
+
+      function setupSearchSelect(wrapper, input, optionsBox, values) {
+        function renderOptions(filter = "") {
+          const q = filter.trim().toLowerCase();
+          const filtered = values.filter(v => v.toLowerCase().includes(q));
+          optionsBox.innerHTML = "";
+
+          const allOpt = document.createElement("div");
+          allOpt.className = "search-option";
+          allOpt.textContent = "All";
+          allOpt.addEventListener("click", (e) => {
+            e.stopPropagation();
+            input.value = "";
+            wrapper.classList.remove("open");
+          });
+          optionsBox.appendChild(allOpt);
+
+          filtered.forEach(v => {
+            const opt = document.createElement("div");
+            opt.className = "search-option";
+            opt.textContent = v;
+            opt.addEventListener("click", (e) => {
+              e.stopPropagation();
+              input.value = v;
+              wrapper.classList.remove("open");
+            });
+            optionsBox.appendChild(opt);
+          });
+        }
+
+        renderOptions();
+
+        input.addEventListener("click", (e) => {
+          e.stopPropagation();
+          document.querySelectorAll(".search-select").forEach(el => {
+            if (el !== wrapper) el.classList.remove("open");
+          });
+          wrapper.classList.toggle("open");
+          renderOptions(input.value);
+        });
+
+        input.addEventListener("input", () => {
+          wrapper.classList.add("open");
+          renderOptions(input.value);
+        });
+
+        optionsBox.addEventListener("click", (e) => e.stopPropagation());
+      }
+
+      function updateStats(data) {
+        els.totalShipments.textContent = data.length;
+        els.bookedCount.textContent = data.filter(i => i.status === "Booked").length;
+        els.deliveredCount.textContent = data.filter(i => i.status === "Delivered").length;
+        els.rtoCount.textContent = data.filter(i => i.status === "RTO").length;
+      }
+
+      function detailCard(label, value) {
+        return `
+          <div class="detail">
+            <div class="detail-label">${label}</div>
+            <div class="detail-value">${escapeHtml(value ?? "-")}</div>
+          </div>
+        `;
+      }
+
+      function renderShipments() {
+        const pod = els.podSearch.value.trim().toLowerCase();
+        const ref = els.refSearch.value.trim().toLowerCase();
+        const tp = els.tpSearch.value.trim().toLowerCase();
+        const senderName = els.senderNameSearch.value.trim().toLowerCase();
+        const receiverName = els.receiverNameSearch.value.trim().toLowerCase();
+        const senderPhone = els.senderPhoneSearch.value.trim().toLowerCase();
+        const receiverPhone = els.receiverPhoneSearch.value.trim().toLowerCase();
+        const from = els.fromDate.value;
+        const to = els.toDate.value;
+        const courier = els.courierFilter.value.trim();
+        const mode = els.modeFilter.value.trim();
+        const status = els.statusFilter.value.trim();
+
+        const filtered = allShipments.filter(i => {
+          const shipmentDate = toDateOnly(i.booking_datetime || i.createdAt);
+          const matchesDate = (!from || shipmentDate >= from) && (!to || shipmentDate <= to);
+
+          return (
+            (!pod || String(i.pod || "").toLowerCase().includes(pod)) &&
+            (!ref || String(i.reference || "").toLowerCase().includes(ref)) &&
+            (!tp || String(i.tp_awb || "").toLowerCase().includes(tp)) &&
+            (!senderName || String(i.sender_name || "").toLowerCase().includes(senderName)) &&
+            (!receiverName || String(i.receiver_name || "").toLowerCase().includes(receiverName)) &&
+            (!senderPhone || String(i.sender_phone || "").toLowerCase().includes(senderPhone)) &&
+            (!receiverPhone || String(i.receiver_phone || "").toLowerCase().includes(receiverPhone)) &&
+            (!courier || String(i.courier || "") === courier) &&
+            (!mode || String(i.shipment_mode || "") === mode) &&
+            (!status || String(i.status || "") === status) &&
+            matchesDate
+          );
+        });
+
+        updateStats(filtered);
+
+        if (!filtered.length) {
+          els.tbody.innerHTML = `<tr><td colspan="14" class="empty">No shipments found</td></tr>`;
+          return;
+        }
+
+        els.tbody.innerHTML = "";
+
+        filtered.forEach(i => {
+          const options = statusValues.map(s =>
+            `<option value="${escapeHtml(s)}" ${s === i.status ? "selected" : ""}>${escapeHtml(s)}</option>`
+          ).join("");
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="nowrap">${escapeHtml(i.pod || "-")}</td>
+            <td class="nowrap">${escapeHtml(i.reference || "-")}</td>
+            <td class="nowrap">${escapeHtml(i.tp_awb || "-")}</td>
+            <td class="nowrap">${escapeHtml(i.leaf || "-")}</td>
+            <td class="wrap">${escapeHtml(i.sender_name || "-")}</td>
+            <td class="wrap">${escapeHtml(i.receiver_name || "-")}</td>
+            <td class="wrap">${escapeHtml(i.courier || "-")}</td>
+            <td class="wrap">${escapeHtml(i.shipment_mode || "-")}</td>
+            <td class="wrap">${escapeHtml(i.transport_mode || "-")}</td>
+            <td class="nowrap">${escapeHtml(i.weight || "-")}</td>
+            <td class="nowrap">${escapeHtml(i.booking_amount || "-")}</td>
+            <td>
+              <div class="status-stack">
+                <span class="badge ${statusClass(i.status)}">${escapeHtml(i.status || "-")}</span>
+                <select data-id="${escapeHtml(i.id)}">${options}</select>
+              </div>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn btn-info" data-edit-id="${escapeHtml(i.id)}">Edit</button>
+              </div>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn btn-warning" data-details-id="${escapeHtml(i.id)}">Details</button>
+              </div>
+            </td>
+          `;
+          els.tbody.appendChild(tr);
+        });
+
+        els.tbody.querySelectorAll("select[data-id]").forEach(select => {
+          select.addEventListener("change", async () => {
+            try {
+              await fetchJSON(`/api/shipments/${select.dataset.id}/status`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: select.value })
+              });
+              await loadAll();
+            } catch (err) {
+              alert(err.message);
+            }
+          });
+        });
+
+        els.tbody.querySelectorAll("button[data-edit-id]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            window.location.href = `booking.html?id=${encodeURIComponent(btn.dataset.editId)}`;
+          });
+        });
+
+        els.tbody.querySelectorAll("button[data-details-id]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const shipment = allShipments.find(s => s.id === btn.dataset.detailsId);
+            if (!shipment) return;
+
+            els.modalBody.innerHTML =
+              detailCard("POD", shipment.pod) +
+              detailCard("Reference", shipment.reference) +
+              detailCard("Third Party AWB", shipment.tp_awb) +
+              detailCard("Courier", shipment.courier) +
+              detailCard("Sender Name", shipment.sender_name) +
+              detailCard("Sender Phone", shipment.sender_phone) +
+              detailCard("Receiver Name", shipment.receiver_name) +
+              detailCard("Receiver Phone", shipment.receiver_phone) +
+              detailCard("Origin", shipment.origin) +
+              detailCard("Destination", shipment.destination) +
+              detailCard("Dox Type", shipment.dox_type) +
+              detailCard("Shipment Mode", shipment.shipment_mode) +
+              detailCard("Transport Mode", shipment.transport_mode) +
+              detailCard("Delivery Office Location", shipment.office_location) +
+              detailCard("Leaf", shipment.leaf) +
+              detailCard("Weight", shipment.weight) +
+              detailCard("Volumetric Weight", shipment.volumetric_weight) +
+              detailCard("Booking Amount", shipment.booking_amount) +
+              detailCard("Billing Amount", shipment.billing_amount) +
+              detailCard("Remarks", shipment.remarks) +
+              detailCard("Internal Remarks", shipment.internal_remarks) +
+              detailCard("Status", shipment.status) +
+              detailCard("Booking Date", shipment.booking_datetime || shipment.createdAt || "-");
+
+            els.detailsModal.classList.add("active");
+          });
+        });
+      }
+
+      async function loadAll() {
+        const [couriers, modes, statuses, shipments] = await Promise.all([
+          fetchJSON("/api/couriers"),
+          fetchJSON("/api/shipment-modes"),
+          fetchJSON("/api/statuses"),
+          fetchJSON("/api/shipments")
+        ]);
+
+        allShipments = shipments;
+        courierValues = couriers.map(c => c.name).filter(Boolean);
+        modeValues = modes.filter(Boolean);
+        statusValues = statuses.filter(Boolean);
+
+        setupSearchSelect(els.courierSelect, els.courierFilter, els.courierOptions, courierValues);
+        setupSearchSelect(els.modeSelect, els.modeFilter, els.modeOptions, modeValues);
+        setupSearchSelect(els.statusSelect, els.statusFilter, els.statusOptions, statusValues);
+
+        renderShipments();
+      }
+
+      function setTodayFilter() {
+        const today = new Date();
+        const v = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+        els.fromDate.value = v;
+        els.toDate.value = v;
+        renderShipments();
+      }
+
+      function setWeekFilter() {
+        const today = new Date();
+        const day = today.getDay();
+        const diff = day === 0 ? 6 : day - 1;
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - diff);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        els.fromDate.value = new Date(monday.getTime() - monday.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+        els.toDate.value = new Date(sunday.getTime() - sunday.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+        renderShipments();
+      }
+
+      function setMonthFilter() {
+        const today = new Date();
+        const first = new Date(today.getFullYear(), today.getMonth(), 1);
+        const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        els.fromDate.value = new Date(first.getTime() - first.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+        els.toDate.value = new Date(last.getTime() - last.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+        renderShipments();
+      }
+
+      function clearDateFilter() {
+        els.fromDate.value = "";
+        els.toDate.value = "";
+        renderShipments();
+      }
+
+      function resetFilters() {
+        els.podSearch.value = "";
+        els.refSearch.value = "";
+        els.tpSearch.value = "";
+        els.senderNameSearch.value = "";
+        els.receiverNameSearch.value = "";
+        els.senderPhoneSearch.value = "";
+        els.receiverPhoneSearch.value = "";
+        els.fromDate.value = "";
+        els.toDate.value = "";
+        els.courierFilter.value = "";
+        els.modeFilter.value = "";
+        els.statusFilter.value = "";
+        renderShipments();
+      }
+
+      els.accountBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        els.accountDropdown.classList.toggle("open");
+      });
+      els.logoutBtn.addEventListener("click", logout);
+      els.themeColor.addEventListener("input", (e) => changeColor(e.target.value));
+      els.fontSelect.addEventListener("change", (e) => changeFont(e.target.value));
+      els.todayBtn.addEventListener("click", setTodayFilter);
+      els.weekBtn.addEventListener("click", setWeekFilter);
+      els.monthBtn.addEventListener("click", setMonthFilter);
+      els.clearDatesBtn.addEventListener("click", clearDateFilter);
+      els.searchBtn.addEventListener("click", renderShipments);
+      els.resetBtn.addEventListener("click", resetFilters);
+      els.closeDetailsBtn.addEventListener("click", () => els.detailsModal.classList.remove("active"));
+      els.detailsModal.addEventListener("click", (e) => {
+        if (e.target === els.detailsModal) els.detailsModal.classList.remove("active");
+      });
+
+      loadAll().catch(err => {
+        els.tbody.innerHTML = `<tr><td colspan="14" class="empty">${escapeHtml(err.message)}</td></tr>`;
+      });
+    })();
+  </script>
+</body>
+</html>

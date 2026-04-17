@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Booking Entry</title>
+  <style>
+    :root{
+      --primary:#2563eb;
+      --accent:#38bdf8;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --border:#dbe3ef;
+      --shadow:0 16px 34px rgba(15,23,42,0.08);
+    }
+
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      padding:20px;
+      font-family:"Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(56,189,248,0.10), transparent 25%),
+        linear-gradient(135deg, #eff6ff, #f9fbff);
+      color:var(--text);
+    }
+
+    .container{
+      max-width:1360px;
+      margin:auto;
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:24px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .header{
+      background:linear-gradient(135deg, var(--primary), var(--accent));
+      color:#fff;
+      padding:24px 28px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .header-left{
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+
+    .header-logo{
+      width:60px;
+      height:60px;
+      border-radius:16px;
+      background:#fff;
+      padding:6px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      box-shadow:0 8px 18px rgba(0,0,0,0.10);
+    }
+
+    .header-logo img{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+    }
+
+    .header h2{
+      margin:0;
+      font-size:28px;
+      font-weight:900;
+    }
+
+    .header p{
+      margin:6px 0 0;
+      color:rgba(255,255,255,0.92);
+      font-size:14px;
+    }
+
+    .header button{
+      border:none;
+      border-radius:14px;
+      padding:11px 15px;
+      background:rgba(255,255,255,0.18);
+      color:#fff;
+      font-weight:800;
+      cursor:pointer;
+    }
+
+    .content{ padding:24px; }
+
+    .section-title{
+      margin:0 0 14px;
+      font-size:20px;
+      font-weight:900;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(3, minmax(0,1fr));
+      gap:14px;
+    }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      position:relative;
+    }
+
+    .field.full{ grid-column:1 / -1; }
+
+    .field label{
+      font-size:13px;
+      font-weight:800;
+      color:#334155;
+    }
+
+    input, select, textarea{
+      width:100%;
+      padding:12px 14px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      outline:none;
+      background:#fff;
+      font-size:14px;
+      min-height:46px;
+    }
+
+    input:focus, select:focus, textarea:focus{
+      border-color:var(--primary);
+      box-shadow:0 0 0 4px rgba(37,99,235,0.12);
+    }
+
+    textarea{
+      resize:vertical;
+      min-height:95px;
+    }
+
+    .double-box{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+
+    .triple-box{
+      display:grid;
+      grid-template-columns:1.2fr 1fr 0.8fr;
+      gap:10px;
+    }
+
+    .quad-box{
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr auto;
+      gap:10px;
+      align-items:end;
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:22px;
+    }
+
+    .actions button{
+      border:none;
+      border-radius:14px;
+      padding:12px 18px;
+      cursor:pointer;
+      font-weight:900;
+    }
+
+    .save{
+      background:linear-gradient(135deg, var(--primary), var(--accent));
+      color:#fff;
+    }
+
+    .cancel{
+      background:#0f172a;
+      color:#fff;
+    }
+
+    .secondary{
+      background:#64748b;
+      color:#fff;
+    }
+
+    .msg{
+      margin-top:14px;
+      font-size:14px;
+      font-weight:800;
+      min-height:18px;
+    }
+
+    .success{ color:#16a34a; }
+    .error{ color:#dc2626; }
+
+    .search-select{ position:relative; }
+    .search-select input{ padding-right:38px; }
+
+    .search-arrow{
+      position:absolute;
+      right:14px;
+      top:50%;
+      transform:translateY(-50%);
+      color:#64748b;
+      font-size:12px;
+      pointer-events:none;
+    }
+
+    .search-options,
+    .history-options{
+      position:absolute;
+      top:calc(100% + 6px);
+      left:0;
+      right:0;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:16px;
+      box-shadow:0 16px 30px rgba(15,23,42,0.12);
+      padding:8px;
+      display:none;
+      max-height:220px;
+      overflow:auto;
+      z-index:60;
+    }
+
+    .search-select.open .search-options,
+    .field.history-open .history-options{
+      display:block;
+    }
+
+    .search-option,
+    .history-option{
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-size:13px;
+      font-weight:700;
+      color:#0f172a;
+      background:#fff;
+    }
+
+    .search-option:hover,
+    .history-option:hover{
+      background:#eff6ff;
+      color:#1d4ed8;
+    }
+
+    .option-muted{
+      color:#64748b;
+      font-size:12px;
+      font-weight:700;
+      padding:8px 10px;
+    }
+
+    @media (max-width: 980px){
+      .grid{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+      .double-box{ grid-template-columns:1fr; }
+      .triple-box{ grid-template-columns:1fr; }
+      .quad-box{ grid-template-columns:1fr; }
+    }
+
+    @media (max-width: 640px){
+      .grid{ grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-left">
+        <div class="header-logo">
+          <img src="./logo.png?v=5" alt="Logo" />
+        </div>
+        <div>
+          <h2 id="pageTitle">Booking Entry</h2>
+          <p>Manual POD entry with professional shipment creation form</p>
+        </div>
+      </div>
+      <button type="button" onclick="window.location.href='admin.html'">Back to Admin</button>
+    </div>
+
+    <div class="content">
+      <h3 class="section-title">Shipment Information</h3>
+
+      <form id="bookingForm" autocomplete="off">
+        <div class="grid">
+          <div class="field">
+            <label>POD *</label>
+            <input id="pod" required autocomplete="off" />
+          </div>
+
+          <div class="field history-field" data-history-key="reference">
+            <label>Reference</label>
+            <input id="reference" autocomplete="off" />
+            <div class="history-options"></div>
+          </div>
+
+          <div class="field history-field" data-history-key="tp_awb">
+            <label>Third Party AWB</label>
+            <input id="tp_awb" autocomplete="off" />
+            <div class="history-options"></div>
+          </div>
+
+          <div class="field">
+            <label>Booking Date & Time *</label>
+            <div class="triple-box">
+              <input id="booking_date" type="date" autocomplete="off" />
+              <input id="booking_time" type="time" autocomplete="off" />
+              <select id="booking_ampm">
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field history-field" data-history-key="sender_name">
+            <label>Sender Name</label>
+            <input id="sender_name" autocomplete="off" />
+            <div class="history-options"></div>
+          </div>
+
+          <div class="field history-field" data-history-key="sender_phone">
+            <label>Sender Phone</label>
+            <input id="sender_phone" autocomplete="off" />
+            <div class="history-options"></div>
+          </div>
+
+          <div class="field history-field" data-history-key="receiver_name">
+            <label>Receiver Name</label>
+            <input id="receiver_name" autocomplete="off" />
+            <div class="history-options"></div>
+          </div>
+
+          <div class="field history-field" data-history-key="receiver_phone">
+            <label>Receiver Phone</label>
+            <input id="receiver_phone" autocomplete="off" />
+            <div class="history-options"></div>
+          </div>
+
+          <div class="field">
+            <label>Courier</label>
+            <div class="search-select" id="courierSelect">
+              <input type="text" id="courier" placeholder="Search courier" autocomplete="off">
+              <span class="search-arrow">▾</span>
+              <div class="search-options" id="courierOptions"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Dox Type</label>
+            <select id="dox_type">
+              <option value="">Select Type</option>
+              <option value="dox">dox</option>
+              <option value="non dox">non dox</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Shipment Mode</label>
+            <div class="search-select" id="shipmentModeSelect">
+              <input type="text" id="shipment_mode" placeholder="Search shipment mode" autocomplete="off">
+              <span class="search-arrow">▾</span>
+              <div class="search-options" id="shipmentModeOptions"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Transport Mode</label>
+            <div class="search-select" id="transportModeSelect">
+              <input type="text" id="transport_mode" placeholder="Search transport mode" autocomplete="off">
+              <span class="search-arrow">▾</span>
+              <div class="search-options" id="transportModeOptions"></div>
+            </div>
+          </div>
+
+          <div class="field history-field" data-history-key="weight">
+            <label>Weight</label>
+            <input id="weight" type="number" step="0.01" autocomplete="off" />
+            <div class="history-options"></div>
+          </div>
+
+          <div class="field history-field" data-history-key="volumetric_weight">
+            <label>Volumetric Weight</label>
+            <input id="volumetric_weight" type="number" step="0.01" autocomplete="off" />
+            <div class="history-options"></div>
+          </div>
+
+          <div class="field history-field" data-history-key="booking_amount">
+            <label>Booking Amount</label>
+            <input id="booking_amount" type="number" step="0.01" autocomplete="off" />
+            <div class="history-options"></div>
+          </div>
+
+          <div class="field history-field" data-history-key="billing_amount">
+            <label>Billing Amount</label>
+            <input id="billing_amount" type="number" step="0.01" autocomplete="off" />
+            <div class="history-options"></div>
+          </div>
+
+          <div class="field history-field" data-history-key="leaf">
+            <label>Leaf</label>
+            <input id="leaf" autocomplete="off" />
+            <div class="history-options"></div>
+          </div>
+
+          <div class="field full history-field" data-history-key="origin">
+            <label>Origin</label>
+            <input id="origin" autocomplete="off" />
+            <div class="history-options"></div>
+          </div>
+
+          <div class="field full history-field" data-history-key="destination">
+            <label>Destination</label>
+            <input id="destination" autocomplete="off" />
+            <div class="history-options"></div>
+          </div>
+
+          <div class="field full history-field" data-history-key="remarks">
+            <label>Remarks</label>
+            <textarea id="remarks" autocomplete="off"></textarea>
+            <div class="history-options"></div>
+          </div>
+
+          <div class="field full">
+            <div class="double-box">
+              <div class="field history-field" data-history-key="office_location">
+                <label>Delivery Office Location</label>
+                <textarea id="office_location" placeholder="Enter delivery office location" autocomplete="off"></textarea>
+                <div class="history-options"></div>
+              </div>
+
+              <div class="field history-field" data-history-key="internal_remarks">
+                <label>Internal Remarks</label>
+                <textarea id="internal_remarks" autocomplete="off"></textarea>
+                <div class="history-options"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field full">
+            <label>Quick Volumetric Calculator</label>
+            <div class="quad-box">
+              <input id="vol_length" type="number" step="0.01" placeholder="Length (cm)" />
+              <input id="vol_width" type="number" step="0.01" placeholder="Width (cm)" />
+              <input id="vol_height" type="number" step="0.01" placeholder="Height (cm)" />
+              <button type="button" class="secondary" id="applyVolBtn">Apply</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="save">Save Booking</button>
+          <button type="button" class="cancel" onclick="window.location.href='admin.html'">Cancel</button>
+        </div>
+
+        <div class="msg" id="msg"></div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    if (localStorage.getItem("loggedIn") !== "true") {
+      window.location.href = "login.html";
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const editId = params.get("id");
+
+    const pod = document.getElementById("pod");
+    const reference = document.getElementById("reference");
+    const tp_awb = document.getElementById("tp_awb");
+    const booking_date = document.getElementById("booking_date");
+    const booking_time = document.getElementById("booking_time");
+    const booking_ampm = document.getElementById("booking_ampm");
+    const sender_name = document.getElementById("sender_name");
+    const sender_phone = document.getElementById("sender_phone");
+    const receiver_name = document.getElementById("receiver_name");
+    const receiver_phone = document.getElementById("receiver_phone");
+    const courier = document.getElementById("courier");
+    const dox_type = document.getElementById("dox_type");
+    const shipment_mode = document.getElementById("shipment_mode");
+    const transport_mode = document.getElementById("transport_mode");
+    const weight = document.getElementById("weight");
+    const volumetric_weight = document.getElementById("volumetric_weight");
+    const booking_amount = document.getElementById("booking_amount");
+    const billing_amount = document.getElementById("billing_amount");
+    const leaf = document.getElementById("leaf");
+    const origin = document.getElementById("origin");
+    const destination = document.getElementById("destination");
+    const remarks = document.getElementById("remarks");
+    const office_location = document.getElementById("office_location");
+    const internal_remarks = document.getElementById("internal_remarks");
+    const bookingForm = document.getElementById("bookingForm");
+    const msg = document.getElementById("msg");
+    const pageTitle = document.getElementById("pageTitle");
+    const vol_length = document.getElementById("vol_length");
+    const vol_width = document.getElementById("vol_width");
+    const vol_height = document.getElementById("vol_height");
+    const applyVolBtn = document.getElementById("applyVolBtn");
+
+    let shipmentCache = [];
+    let courierList = [];
+    let shipmentModeList = [];
+    let transportModeList = [];
+
+    function showMessage(text, type) {
+      msg.textContent = text || "";
+      msg.className = `msg ${type || ""}`.trim();
+    }
+
+    async function fetchJSON(url, options = {}) {
+      const res = await fetch(url, options);
+      const text = await res.text();
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = { error: text || "Request failed" };
+      }
+      if (!res.ok) throw new Error(data.error || "Request failed");
+      return data;
+    }
+
+    function to12HourParts(dateObj) {
+      let hours = dateObj.getHours();
+      const minutes = String(dateObj.getMinutes()).padStart(2, "0");
+      const ampm = hours >= 12 ? "PM" : "AM";
+      hours = hours % 12;
+      if (hours === 0) hours = 12;
+      const hh = String(hours).padStart(2, "0");
+      return {
+        date: new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000).toISOString().slice(0, 10),
+        time: `${hh}:${minutes}`,
+        ampm
+      };
+    }
+
+    function buildBookingDateTime(dateValue, timeValue, ampmValue) {
+      if (!dateValue || !timeValue || !ampmValue) return "";
+      let [hours, minutes] = timeValue.split(":").map(Number);
+      if (Number.isNaN(hours) || Number.isNaN(minutes)) return "";
+
+      if (ampmValue === "AM") {
+        if (hours === 12) hours = 0;
+      } else {
+        if (hours !== 12) hours += 12;
+      }
+
+      return `${dateValue} ${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+    }
+
+    function setCurrentDateTime() {
+      const now = new Date();
+      const parts = to12HourParts(now);
+      booking_date.value = parts.date;
+      booking_time.value = parts.time;
+      booking_ampm.value = parts.ampm;
+    }
+
+    function setDateTimeFromText(value) {
+      if (!value) {
+        setCurrentDateTime();
+        return;
+      }
+
+      let dateObj = new Date(value);
+      if (Number.isNaN(dateObj.getTime())) {
+        dateObj = new Date(String(value).replace(" ", "T"));
+      }
+      if (Number.isNaN(dateObj.getTime())) {
+        setCurrentDateTime();
+        return;
+      }
+
+      const parts = to12HourParts(dateObj);
+      booking_date.value = parts.date;
+      booking_time.value = parts.time;
+      booking_ampm.value = parts.ampm;
+    }
+
+    function closeAllPopups() {
+      document.querySelectorAll(".search-select").forEach(el => el.classList.remove("open"));
+      document.querySelectorAll(".history-field").forEach(el => el.classList.remove("history-open"));
+    }
+
+    document.addEventListener("click", closeAllPopups);
+
+    function setupSearchSelect(wrapperId, inputId, optionsId, getValues) {
+      const wrapper = document.getElementById(wrapperId);
+      const input = document.getElementById(inputId);
+      const optionsBox = document.getElementById(optionsId);
+
+      function renderOptions(filter = "") {
+        const values = Array.isArray(getValues()) ? getValues() : [];
+        const q = String(filter || "").trim().toLowerCase();
+        const filtered = values.filter(v => String(v).toLowerCase().includes(q));
+
+        optionsBox.innerHTML = "";
+
+        if (!filtered.length) {
+          optionsBox.innerHTML = `<div class="option-muted">No matching options</div>`;
+          return;
+        }
+
+        filtered.forEach(v => {
+          const opt = document.createElement("div");
+          opt.className = "search-option";
+          opt.textContent = v;
+          opt.addEventListener("click", function(e) {
+            e.stopPropagation();
+            input.value = v;
+            wrapper.classList.remove("open");
+          });
+          optionsBox.appendChild(opt);
+        });
+      }
+
+      input.addEventListener("click", function(e) {
+        e.stopPropagation();
+        closeAllPopups();
+        wrapper.classList.add("open");
+        renderOptions(input.value);
+      });
+
+      input.addEventListener("input", function(e) {
+        e.stopPropagation();
+        closeAllPopups();
+        wrapper.classList.add("open");
+        renderOptions(input.value);
+      });
+
+      optionsBox.addEventListener("click", function(e) {
+        e.stopPropagation();
+      });
+    }
+
+    function getHistoryKey(key) {
+      return `mvexpress_history_${key}`;
+    }
+
+    function loadHistory(key) {
+      try {
+        return JSON.parse(localStorage.getItem(getHistoryKey(key)) || "[]");
+      } catch {
+        return [];
+      }
+    }
+
+    function saveHistoryValue(key, value) {
+      const clean = String(value || "").trim();
+      if (!clean) return;
+
+      const existing = loadHistory(key).filter(
+        v => String(v).trim().toLowerCase() !== clean.toLowerCase()
+      );
+      existing.unshift(clean);
+      localStorage.setItem(getHistoryKey(key), JSON.stringify(existing.slice(0, 8)));
+    }
+
+    function setupHistoryField(fieldEl) {
+      const key = fieldEl.dataset.historyKey;
+      const input = fieldEl.querySelector("input, textarea");
+      const box = fieldEl.querySelector(".history-options");
+      if (!key || !input || !box) return;
+
+      function renderHistory(filter = "") {
+        const values = loadHistory(key);
+        const q = String(filter || "").trim().toLowerCase();
+        const filtered = values.filter(v => String(v).toLowerCase().includes(q));
+
+        box.innerHTML = "";
+
+        if (!filtered.length) {
+          fieldEl.classList.remove("history-open");
+          return;
+        }
+
+        filtered.forEach(v => {
+          const item = document.createElement("div");
+          item.className = "history-option";
+          item.textContent = v;
+          item.addEventListener("click", function(e) {
+            e.stopPropagation();
+            input.value = v;
+            fieldEl.classList.remove("history-open");
+          });
+          box.appendChild(item);
+        });
+
+        fieldEl.classList.add("history-open");
+      }
+
+      input.addEventListener("focus", function() {
+        closeAllPopups();
+        renderHistory(input.value);
+      });
+
+      input.addEventListener("input", function() {
+        closeAllPopups();
+        renderHistory(input.value);
+      });
+
+      box.addEventListener("click", function(e) {
+        e.stopPropagation();
+      });
+    }
+
+    async function loadMasterData() {
+      const [couriers, shipmentModes, transportModes, shipments] = await Promise.all([
+        fetchJSON("/api/couriers"),
+        fetchJSON("/api/shipment-modes"),
+        fetchJSON("/api/transport-modes"),
+        fetchJSON("/api/shipments")
+      ]);
+
+      shipmentCache = Array.isArray(shipments) ? shipments : [];
+      courierList = (Array.isArray(couriers) ? couriers : []).map(c => c.name).filter(Boolean);
+      shipmentModeList = Array.isArray(shipmentModes) ? shipmentModes.filter(Boolean) : [];
+      transportModeList = Array.isArray(transportModes) ? transportModes.filter(Boolean) : [];
+    }
+
+    function fillFromShipment(data) {
+      pageTitle.textContent = "Edit Booking";
+
+      pod.value = data.pod || "";
+      pod.readOnly = true;
+      pod.style.background = "#f1f5f9";
+
+      reference.value = data.reference || "";
+      tp_awb.value = data.tp_awb || "";
+      sender_name.value = data.sender_name || "";
+      sender_phone.value = data.sender_phone || "";
+      receiver_name.value = data.receiver_name || "";
+      receiver_phone.value = data.receiver_phone || "";
+      courier.value = data.courier || "";
+      dox_type.value = data.dox_type || "";
+      shipment_mode.value = data.shipment_mode || "";
+      transport_mode.value = data.transport_mode || "";
+      weight.value = data.weight ?? "";
+      volumetric_weight.value = data.volumetric_weight ?? "";
+      booking_amount.value = data.booking_amount ?? "";
+      billing_amount.value = data.billing_amount ?? "";
+      leaf.value = data.leaf || "";
+      origin.value = data.origin || "";
+      destination.value = data.destination || "";
+      remarks.value = data.remarks || "";
+      office_location.value = data.office_location || "";
+      internal_remarks.value = data.internal_remarks || "";
+      setDateTimeFromText(data.booking_datetime || data.createdAt || "");
+    }
+
+    function saveFieldHistories() {
+      [
+        ["reference", reference.value],
+        ["tp_awb", tp_awb.value],
+        ["sender_name", sender_name.value],
+        ["sender_phone", sender_phone.value],
+        ["receiver_name", receiver_name.value],
+        ["receiver_phone", receiver_phone.value],
+        ["weight", weight.value],
+        ["volumetric_weight", volumetric_weight.value],
+        ["booking_amount", booking_amount.value],
+        ["billing_amount", billing_amount.value],
+        ["leaf", leaf.value],
+        ["origin", origin.value],
+        ["destination", destination.value],
+        ["remarks", remarks.value],
+        ["office_location", office_location.value],
+        ["internal_remarks", internal_remarks.value]
+      ].forEach(([k, v]) => saveHistoryValue(k, v));
+    }
+
+    function calculateVolumetric() {
+      const l = Number(vol_length.value || 0);
+      const w = Number(vol_width.value || 0);
+      const h = Number(vol_height.value || 0);
+
+      if (!l || !w || !h) {
+        showMessage("Enter length, width and height to calculate volumetric weight", "error");
+        return;
+      }
+
+      const result = (l * w * h) / 5000;
+      volumetric_weight.value = result.toFixed(2);
+      showMessage("Volumetric weight applied", "success");
+    }
+
+    applyVolBtn.addEventListener("click", calculateVolumetric);
+
+    bookingForm.addEventListener("submit", async function(e) {
+      e.preventDefault();
+      showMessage("", "");
+
+      const booking_datetime = buildBookingDateTime(
+        booking_date.value,
+        booking_time.value,
+        booking_ampm.value
+      );
+
+      const payload = {
+        pod: String(pod.value || "").trim(),
+        reference: String(reference.value || "").trim(),
+        tp_awb: String(tp_awb.value || "").trim(),
+        sender_name: String(sender_name.value || "").trim(),
+        sender_phone: String(sender_phone.value || "").trim(),
+        receiver_name: String(receiver_name.value || "").trim(),
+        receiver_phone: String(receiver_phone.value || "").trim(),
+        courier: String(courier.value || "").trim(),
+        dox_type: dox_type.value || "",
+        shipment_mode: String(shipment_mode.value || "").trim(),
+        transport_mode: String(transport_mode.value || "").trim(),
+        weight: String(weight.value || "").trim(),
+        volumetric_weight: String(volumetric_weight.value || "").trim(),
+        booking_amount: String(booking_amount.value || "").trim(),
+        billing_amount: String(billing_amount.value || "").trim(),
+        leaf: String(leaf.value || "").trim(),
+        origin: String(origin.value || "").trim(),
+        destination: String(destination.value || "").trim(),
+        remarks: String(remarks.value || "").trim(),
+        office_location: String(office_location.value || "").trim(),
+        internal_remarks: String(internal_remarks.value || "").trim(),
+        booking_datetime
+      };
+
+      if (!payload.pod) {
+        showMessage("POD is required", "error");
+        return;
+      }
+
+      if (!payload.booking_datetime) {
+        showMessage("Booking date and time are required", "error");
+        return;
+      }
+
+      try {
+        if (editId) {
+          await fetchJSON(`/api/shipments/${encodeURIComponent(editId)}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          await fetchJSON("/api/shipments", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+        }
+
+        saveFieldHistories();
+        showMessage("Booking saved successfully", "success");
+
+        setTimeout(() => {
+          window.location.href = "admin.html";
+        }, 500);
+      } catch (err) {
+        showMessage(err.message, "error");
+      }
+    });
+
+    async function init() {
+      try {
+        document.querySelectorAll(".history-field").forEach(setupHistoryField);
+
+        setupSearchSelect("courierSelect", "courier", "courierOptions", () => courierList);
+        setupSearchSelect("shipmentModeSelect", "shipment_mode", "shipmentModeOptions", () => shipmentModeList);
+        setupSearchSelect("transportModeSelect", "transport_mode", "transportModeOptions", () => transportModeList);
+
+        await loadMasterData();
+        setCurrentDateTime();
+
+        if (editId) {
+          const row = shipmentCache.find(s => s.id === editId);
+          if (row) fillFromShipment(row);
+        }
+      } catch (err) {
+        showMessage(err.message, "error");
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

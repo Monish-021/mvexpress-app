@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Account Management</title>
+  <style>
+    :root{
+      --primary:#2563eb;
+      --accent:#38bdf8;
+      --border:#dbe3ef;
+      --text:#0f172a;
+      --muted:#64748b;
+      --shadow:0 16px 34px rgba(15,23,42,0.08);
+      --success:#16a34a;
+      --warning:#f59e0b;
+      --danger:#dc2626;
+    }
+
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      font-family:"Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(56,189,248,0.10), transparent 25%),
+        linear-gradient(135deg, #eff6ff, #f8fbff);
+      color:var(--text);
+      padding:20px;
+    }
+
+    .container{
+      max-width:1280px;
+      margin:auto;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:24px;
+      overflow:hidden;
+      box-shadow:var(--shadow);
+    }
+
+    .header{
+      background:linear-gradient(135deg, var(--primary), var(--accent));
+      color:#fff;
+      padding:22px 26px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .header h2{
+      margin:0;
+      font-size:28px;
+      font-weight:900;
+    }
+
+    .header p{
+      margin:6px 0 0;
+      font-size:14px;
+      color:rgba(255,255,255,0.92);
+    }
+
+    .header button{
+      border:none;
+      border-radius:14px;
+      padding:11px 15px;
+      background:rgba(255,255,255,0.18);
+      color:#fff;
+      font-weight:800;
+      cursor:pointer;
+    }
+
+    .content{
+      padding:22px;
+    }
+
+    .panel{
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:20px;
+      padding:18px;
+      margin-bottom:18px;
+    }
+
+    .panel-title{
+      margin:0 0 14px;
+      font-size:22px;
+      font-weight:900;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0,1fr));
+      gap:12px;
+    }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .field label{
+      font-size:13px;
+      font-weight:800;
+      color:#334155;
+    }
+
+    input, select{
+      width:100%;
+      padding:12px 14px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      outline:none;
+      background:#fff;
+      font-size:14px;
+      min-height:46px;
+    }
+
+    input:focus, select:focus{
+      border-color:#2563eb;
+      box-shadow:0 0 0 4px rgba(37,99,235,0.12);
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:16px;
+    }
+
+    button{
+      border:none;
+      border-radius:12px;
+      padding:11px 15px;
+      cursor:pointer;
+      font-weight:800;
+      color:#fff;
+      min-height:40px;
+    }
+
+    .save{ background:var(--success); }
+    .clear{ background:#64748b; }
+    .edit{ background:var(--warning); }
+    .delete{ background:var(--danger); }
+
+    .table-wrap{
+      overflow:auto;
+      border:1px solid var(--border);
+      border-radius:18px;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:#fff;
+    }
+
+    th{
+      background:#eef5ff;
+      color:#1e3a8a;
+      padding:13px 10px;
+      border-bottom:1px solid var(--border);
+      font-size:13px;
+      text-align:center;
+      white-space:nowrap;
+    }
+
+    td{
+      padding:12px 10px;
+      text-align:center;
+      border-bottom:1px solid #edf2f7;
+      font-size:13px;
+      word-break:break-word;
+    }
+
+    tr:hover td{ background:#f9fbff; }
+
+    .action-group{
+      display:flex;
+      gap:8px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+
+    .empty{
+      text-align:center;
+      color:var(--muted);
+      font-weight:800;
+      padding:24px;
+    }
+
+    .mode-badge{
+      display:inline-block;
+      margin-left:10px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#eff6ff;
+      color:#1d4ed8;
+      font-size:12px;
+      font-weight:800;
+      vertical-align:middle;
+    }
+
+    .msg{
+      min-height:20px;
+      margin-top:12px;
+      font-size:13px;
+      font-weight:800;
+    }
+
+    .error{ color:#dc2626; }
+    .success{ color:#16a34a; }
+
+    .role-badge{
+      display:inline-block;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#eff6ff;
+      color:#1d4ed8;
+      font-size:12px;
+      font-weight:900;
+      white-space:nowrap;
+      text-transform:capitalize;
+    }
+
+    @media (max-width: 1000px){
+      .grid{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+    }
+
+    @media (max-width: 640px){
+      .grid{ grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h2>👤 Account Management <span id="editState" class="mode-badge" style="display:none;">Edit Mode</span></h2>
+        <p>Create, edit and manage login accounts safely</p>
+      </div>
+      <button onclick="window.location.href='admin.html'">Back to Admin</button>
+    </div>
+
+    <div class="content">
+      <div class="panel">
+        <h3 class="panel-title">Add / Edit Account</h3>
+
+        <div class="grid">
+          <div class="field">
+            <label>Username</label>
+            <input id="username" autocomplete="off" placeholder="Enter username" />
+          </div>
+
+          <div class="field">
+            <label>Password</label>
+            <input id="password" type="password" autocomplete="off" placeholder="Enter password" />
+          </div>
+
+          <div class="field">
+            <label>Role</label>
+            <select id="role">
+              <option value="staff">staff</option>
+              <option value="admin">admin</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Quick Info</label>
+            <input id="infoBox" value="Default admin cannot be deleted" readonly />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="save" onclick="saveAccount()">Save Account</button>
+          <button class="clear" onclick="clearForm()">Clear</button>
+        </div>
+
+        <div class="msg" id="msg"></div>
+      </div>
+
+      <div class="panel">
+        <h3 class="panel-title">Saved Accounts</h3>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:90px;">ID</th>
+                <th>Username</th>
+                <th style="width:120px;">Role</th>
+                <th style="width:200px;">Created</th>
+                <th style="width:230px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tbody">
+              <tr><td colspan="5" class="empty">Loading accounts.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    if (localStorage.getItem("loggedIn") !== "true") {
+      window.location.href = "login.html";
+    }
+
+    let editId = null;
+    let accountCache = [];
+
+    async function fetchJSON(url, options = {}) {
+      const res = await fetch(url, options);
+      const text = await res.text();
+
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = { error: text || "Request failed" };
+      }
+
+      if (!res.ok) throw new Error(data.error || "Request failed");
+      return data;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#39;");
+    }
+
+    function showMessage(text, type = "") {
+      msg.textContent = text;
+      msg.className = `msg ${type}`.trim();
+    }
+
+    function formatDate(value) {
+      if (!value) return "-";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return date.toLocaleString();
+    }
+
+    function clearForm() {
+      editId = null;
+      username.value = "";
+      password.value = "";
+      role.value = "staff";
+      editState.style.display = "none";
+      showMessage("");
+      username.focus();
+    }
+
+    function fillFormForEdit(account) {
+      editId = account.id;
+      username.value = account.username || "";
+      password.value = "";
+      role.value = account.role || "staff";
+      editState.style.display = "inline-block";
+      showMessage("Editing account. Enter a password to keep/update the login password.", "success");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function fillFormForEditById(id) {
+      const account = accountCache.find(a => a.id === id);
+      if (account) fillFormForEdit(account);
+    }
+
+    async function loadAccounts() {
+      tbody.innerHTML = `<tr><td colspan="5" class="empty">Loading accounts.</td></tr>`;
+
+      try {
+        accountCache = await fetchJSON("/api/accounts");
+        tbody.innerHTML = "";
+
+        if (!accountCache.length) {
+          tbody.innerHTML = `<tr><td colspan="5" class="empty">No accounts found</td></tr>`;
+          return;
+        }
+
+        accountCache.forEach(account => {
+          const isDefaultAdmin = String(account.username || "").trim().toLowerCase() === "mvexpress021";
+
+          tbody.innerHTML += `
+            <tr>
+              <td>${escapeHtml(account.id || "-")}</td>
+              <td>${escapeHtml(account.username || "-")}</td>
+              <td><span class="role-badge">${escapeHtml(account.role || "staff")}</span></td>
+              <td>${escapeHtml(formatDate(account.createdAt))}</td>
+              <td>
+                <div class="action-group">
+                  <button class="edit" onclick="fillFormForEditById('${escapeHtml(account.id)}')">Edit</button>
+                  ${isDefaultAdmin
+                    ? `<button class="delete" onclick="alert('Default admin account cannot be deleted')" disabled style="opacity:0.65;cursor:not-allowed;">Delete</button>`
+                    : `<button class="delete" onclick="deleteAccount('${escapeHtml(account.id)}')">Delete</button>`
+                  }
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" class="empty">${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    async function saveAccount() {
+      const payload = {
+        username: username.value.trim(),
+        password: password.value.trim(),
+        role: role.value
+      };
+
+      if (!payload.username) {
+        showMessage("Username is required", "error");
+        username.focus();
+        return;
+      }
+
+      if (!editId && !payload.password) {
+        showMessage("Password is required", "error");
+        password.focus();
+        return;
+      }
+
+      if (editId && !payload.password) {
+        showMessage("For editing, enter a password again so the account stays valid", "error");
+        password.focus();
+        return;
+      }
+
+      try {
+        if (editId) {
+          await fetchJSON(`/api/accounts/${encodeURIComponent(editId)}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          showMessage("Account updated successfully", "success");
+        } else {
+          await fetchJSON("/api/accounts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          showMessage("Account created successfully", "success");
+        }
+
+        clearForm();
+        await loadAccounts();
+      } catch (err) {
+        showMessage(err.message, "error");
+      }
+    }
+
+    async function deleteAccount(id) {
+      if (!confirm("Delete this account?")) return;
+
+      try {
+        await fetchJSON(`/api/accounts/${encodeURIComponent(id)}`, {
+          method: "DELETE"
+        });
+
+        if (editId === id) {
+          clearForm();
+        }
+
+        showMessage("Account deleted successfully", "success");
+        await loadAccounts();
+      } catch (err) {
+        showMessage(err.message, "error");
+      }
+    }
+
+    loadAccounts();
+  </script>
+</body>
+</html>

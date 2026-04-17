@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Volumetric Calculator</title>
+  <style>
+    :root{
+      --primary:#2563eb;
+      --accent:#38bdf8;
+      --border:#dbe3ef;
+      --text:#0f172a;
+      --muted:#64748b;
+      --shadow:0 16px 34px rgba(15,23,42,0.08);
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:"Segoe UI", Arial, sans-serif;
+      background:radial-gradient(circle at top left, rgba(56,189,248,0.10), transparent 25%), linear-gradient(135deg, #eff6ff, #f8fbff);
+      color:var(--text);
+      padding:20px;
+    }
+    .container{
+      max-width:1000px;
+      margin:auto;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:24px;
+      overflow:hidden;
+      box-shadow:var(--shadow);
+    }
+    .header{
+      background:linear-gradient(135deg, var(--primary), var(--accent));
+      color:#fff;
+      padding:22px 26px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .header h2{ margin:0; font-size:28px; font-weight:900; }
+    .header p{ margin:6px 0 0; font-size:14px; color:rgba(255,255,255,0.92); }
+    .header button{
+      border:none; border-radius:14px; padding:11px 15px;
+      background:rgba(255,255,255,0.18); color:#fff; font-weight:800; cursor:pointer;
+    }
+    .content{ padding:22px; }
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0,1fr));
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .field{ display:flex; flex-direction:column; gap:6px; }
+    .field label{ font-size:13px; font-weight:800; color:#334155; }
+    input{
+      width:100%;
+      padding:12px 14px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      outline:none;
+      background:#fff;
+      font-size:14px;
+      min-height:46px;
+    }
+    input:focus{
+      border-color:#2563eb;
+      box-shadow:0 0 0 4px rgba(37,99,235,0.12);
+    }
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:8px;
+    }
+    button{
+      border:none; border-radius:12px; padding:11px 15px;
+      cursor:pointer; font-weight:800; color:#fff; min-height:40px;
+    }
+    .calc{ background:linear-gradient(135deg, #2563eb, #38bdf8); }
+    .clear{ background:#64748b; }
+    .result-card{
+      margin-top:18px;
+      padding:18px;
+      border:1px solid var(--border);
+      border-radius:18px;
+      background:#f8fbff;
+    }
+    .result-label{
+      font-size:13px;
+      font-weight:800;
+      color:var(--muted);
+      margin-bottom:8px;
+    }
+    .result-value{
+      font-size:34px;
+      font-weight:900;
+      color:#1d4ed8;
+    }
+    .formula{
+      margin-top:10px;
+      color:#64748b;
+      font-size:13px;
+      font-weight:700;
+    }
+    @media (max-width: 800px){ .grid{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
+    @media (max-width: 500px){ .grid{ grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h2>📐 Volumetric Calculator</h2>
+        <p>Calculate volumetric weight quickly and professionally</p>
+      </div>
+      <button onclick="window.location.href='admin.html'">Back to Admin</button>
+    </div>
+
+    <div class="content">
+      <div class="grid">
+        <div class="field">
+          <label>Length (cm)</label>
+          <input id="length" type="number" step="0.01" placeholder="Length" />
+        </div>
+
+        <div class="field">
+          <label>Width (cm)</label>
+          <input id="width" type="number" step="0.01" placeholder="Width" />
+        </div>
+
+        <div class="field">
+          <label>Height (cm)</label>
+          <input id="height" type="number" step="0.01" placeholder="Height" />
+        </div>
+
+        <div class="field">
+          <label>Divisor</label>
+          <input id="divisor" type="number" step="1" value="5000" placeholder="Divisor" />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="calc" id="calcBtn">Calculate</button>
+        <button class="clear" id="clearBtn">Clear</button>
+      </div>
+
+      <div class="result-card">
+        <div class="result-label">Volumetric Weight</div>
+        <div class="result-value" id="result">0.00</div>
+        <div class="formula">Formula: (Length × Width × Height) ÷ Divisor</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const lengthEl = document.getElementById("length");
+      const widthEl = document.getElementById("width");
+      const heightEl = document.getElementById("height");
+      const divisorEl = document.getElementById("divisor");
+      const resultEl = document.getElementById("result");
+      const calcBtn = document.getElementById("calcBtn");
+      const clearBtn = document.getElementById("clearBtn");
+
+      function calculate() {
+        const l = Number(lengthEl.value || 0);
+        const w = Number(widthEl.value || 0);
+        const h = Number(heightEl.value || 0);
+        const d = Number(divisorEl.value || 5000);
+
+        if (!l || !w || !h || !d) {
+          resultEl.textContent = "0.00";
+          return;
+        }
+
+        const value = (l * w * h) / d;
+        resultEl.textContent = value.toFixed(2);
+      }
+
+      function clearAll() {
+        lengthEl.value = "";
+        widthEl.value = "";
+        heightEl.value = "";
+        divisorEl.value = "5000";
+        resultEl.textContent = "0.00";
+      }
+
+      calcBtn.addEventListener("click", calculate);
+      clearBtn.addEventListener("click", clearAll);
+      [lengthEl, widthEl, heightEl, divisorEl].forEach(el => el.addEventListener("input", calculate));
+    })();
+  </script>
+</body>
+</html>
