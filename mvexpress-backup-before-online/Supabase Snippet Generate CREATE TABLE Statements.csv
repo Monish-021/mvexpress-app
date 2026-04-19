@@ -1,0 +1,10 @@
+?column?
+"CREATE TABLE accounts (id text, role text, created_at timestamp with time zone, password text, username text);"
+"CREATE TABLE bookings (PHONE numeric, STATUS text, created_at timestamp with time zone, ADDRESS text, NAME text, billing amount bigint, id bigint);"
+"CREATE TABLE couriers (id text, data jsonb, created_at timestamp with time zone);"
+"CREATE TABLE credits (created_at timestamp with time zone, data jsonb, id text);"
+"CREATE TABLE rates (data jsonb, created_at timestamp with time zone, id text);"
+"CREATE TABLE sessions (created_at timestamp with time zone, token text, account_id text, expires_at timestamp with time zone);"
+"CREATE TABLE shipment_modes (id integer, name text);"
+"CREATE TABLE shipments (pod text, status text, id text, created_at timestamp with time zone, data jsonb);"
+"CREATE TABLE statuses (id integer, name text);"

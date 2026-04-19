@@ -1,0 +1,35 @@
+table_name,column_name,data_type,is_nullable
+accounts,id,text,NO
+accounts,username,text,NO
+accounts,password,text,NO
+accounts,role,text,NO
+accounts,created_at,timestamp with time zone,NO
+bookings,id,bigint,NO
+bookings,created_at,timestamp with time zone,NO
+bookings,NAME,text,YES
+bookings,PHONE,numeric,YES
+bookings,ADDRESS,text,YES
+bookings,STATUS,text,YES
+bookings,billing amount,bigint,YES
+couriers,id,text,NO
+couriers,data,jsonb,NO
+couriers,created_at,timestamp with time zone,NO
+credits,id,text,NO
+credits,data,jsonb,NO
+credits,created_at,timestamp with time zone,NO
+rates,id,text,NO
+rates,data,jsonb,NO
+rates,created_at,timestamp with time zone,NO
+sessions,token,text,NO
+sessions,account_id,text,NO
+sessions,created_at,timestamp with time zone,NO
+sessions,expires_at,timestamp with time zone,NO
+shipment_modes,id,integer,NO
+shipment_modes,name,text,YES
+shipments,id,text,NO
+shipments,pod,text,NO
+shipments,status,text,NO
+shipments,data,jsonb,NO
+shipments,created_at,timestamp with time zone,NO
+statuses,id,integer,NO
+statuses,name,text,YES
